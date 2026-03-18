@@ -8,6 +8,8 @@ services:
 
     volumes:
       - ../..:/workspaces:cached
+      - vscode-server-data:/home/vscode/.vscode-server
+      - claude-data:/home/vscode/.claude
 
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
@@ -34,3 +36,5 @@ services:
   
 volumes:
   mariadb-data:
+  vscode-server-data:
+  claude-data:
