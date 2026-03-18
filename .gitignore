@@ -1,0 +1,40 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Database
+*.sql
+*.sql.gz
+*.dump
+
+# Secrets & credentials
+*.key
+*.pem
+*.crt
+*.p12
+*.secret
+*credentials*
+
+# Docker
+docker-compose.override.yml
+.docker/
+
+# IDE
+.idea/
+*.iml
+.vscode/*.log
+.history/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor temp files
+*.swp
+*.swo
