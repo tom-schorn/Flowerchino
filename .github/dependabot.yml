@@ -10,3 +10,8 @@ updates:
    directory: "/"
    schedule:
      interval: weekly
+
+ - package-ecosystem: "composer"
+   directory: "/Backend"
+   schedule:
+     interval: weekly
