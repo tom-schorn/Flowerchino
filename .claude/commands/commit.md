@@ -198,17 +198,41 @@ Dependabot: Prüfe, ob `dependabot.yml` alle aktiven Package-Ecosystems abdeckt:
 
 ---
 
-## Phase 5: Commit
+## Phase 5: GitHub Issues
 
-### Änderungen auswählen
+Prüfe offene Issues, die mit den aktuellen Änderungen in Verbindung stehen könnten:
 
-1. Zeige alle staged und unstaged Änderungen (gruppiert).
-2. Falls keine Dateien staged sind: frage, welche Dateien gestaged werden sollen.
-   - Option: „Alle" oder individuelle Auswahl
-3. Stage die bestätigten Dateien:
-   ```bash
-   git add {dateien}
-   ```
+```bash
+gh issue list --state open --limit 50 --json number,title,labels
+```
+
+1. Vergleiche die Issue-Titel und Labels mit den geänderten Dateien und dem geplanten Commit-Inhalt.
+2. Identifiziere:
+   - Issues die durch diesen Commit **geschlossen** werden können (`Closes #X`)
+   - Issues die durch diesen Commit **referenziert** werden sollten (`Refs #X`)
+3. Zeige die Treffer übersichtlich und frage für jeden:
+   - „Schließen (`Closes #X`), referenzieren (`Refs #X`) oder ignorieren?"
+4. Die bestätigten Verknüpfungen werden in die Commit-Nachricht (Body) aufgenommen.
+5. Wenn keine relevanten Issues gefunden: kurze Bestätigung, weiter zu Phase 6.
+
+---
+
+### Änderungen gruppieren
+
+1. Zeige alle staged und unstaged Änderungen (gruppiert nach Verzeichnis / Thema).
+2. Prüfe ob die Änderungen **logisch trennbar** sind – z.B.:
+   - Konfigurationsdateien vs. Feature-Code
+   - Verschiedene Features in einem Branch
+   - Dokumentation vs. Implementierung
+3. Wenn trennbare Gruppen erkannt werden: schlage auf, diese in **separate Commits** aufzuteilen.
+   - Liste die vorgeschlagenen Gruppen mit je einer Commit-Nachricht
+   - Frage: „So aufteilen, anders gruppieren, oder alles in einen Commit?"
+4. Bei Aufteilung: jeden Commit der Reihe nach abarbeiten (Stage → Issue-Check → Nachricht → Bestätigung → Commit).
+5. Bei einem einzelnen Commit: direkt weiter.
+
+```bash
+git add {dateien der aktuellen gruppe}
+```
 
 ### Commit-Nachricht
 
@@ -244,9 +268,11 @@ Bestätige den Commit mit Hash und Branch.
 
 ---
 
-## Phase 6: Push & Pull Request
+## Phase 7: Push & Pull Request
 
 1. Frage: „Soll ich den Branch pushen und einen Pull Request erstellen?"
+
+> Wenn Issues mit `Closes #X` verknüpft wurden: Diese werden automatisch geschlossen sobald der PR in `main` gemergt wird – das ist das erwartete Verhalten.
 
 **Bei Ja – Push:**
 ```bash

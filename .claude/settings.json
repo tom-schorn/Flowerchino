@@ -2,5 +2,22 @@
   "attribution": {
     "commit": "",
     "pr": ""
+  },
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(gh:*)",
+      "Bash(composer:*)",
+      "Bash(php:*)",
+      "Bash(symfony:*)",
+      "Bash(docker:*)",
+      "Bash(docker-compose:*)",
+      "Bash(mkdir:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(jq:*)",
+      "Bash(base64:*)"
+    ]
   }
 }
