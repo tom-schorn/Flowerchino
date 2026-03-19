@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flowerchino – Vienna</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:    #2C5530;
+      --secondary:  #7A4820;
+      --accent:     #C8A030;
+      --bg:         #F5EDD8;
+      --surface:    #EDE0C5;
+      --surface2:   #E2D3B0;
+      --text:       #18120A;
+      --text-muted: #7A6040;
+      --border:     #CFC0A0;
+    }
+
+    body { font-family: 'Inter', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+
+    nav {
+      background: var(--primary);
+      padding: 0 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .logo { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; color: #fff; }
+    .logo span { color: var(--accent); }
+    nav ul { list-style: none; display: flex; gap: 2rem; align-items: center; }
+    nav ul a { color: rgba(255,255,255,0.65); text-decoration: none; font-size: 0.85rem; font-weight: 500; }
+    nav ul a:hover { color: var(--accent); }
+    .nav-login {
+      background: var(--accent); color: var(--primary) !important;
+      padding: 0.4rem 1.1rem; border-radius: 6px; font-weight: 800 !important;
+    }
+
+    .hero {
+      background: var(--surface);
+      padding: 3.5rem 2rem 2.5rem;
+      border-bottom: 3px solid var(--accent);
+      position: relative;
+    }
+    .hero::after {
+      content: '';
+      position: absolute; left: 0; right: 0; bottom: -3px; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(200,160,48,0.5), transparent);
+    }
+    .hero-inner { max-width: 900px; margin: 0 auto; display: flex; gap: 2rem; align-items: center; }
+    .plant-icon {
+      width: 92px; height: 92px; border-radius: 12px;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3rem; flex-shrink: 0;
+    }
+    .hero-meta { flex: 1; }
+    .hero-meta h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 0.2rem; letter-spacing: -0.03em; color: var(--primary); }
+    .hero-meta .binomial { font-style: italic; color: var(--secondary); font-size: 1.05rem; margin-bottom: 0.8rem; }
+    .badges { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .badge { font-size: 0.72rem; padding: 0.25rem 0.75rem; border-radius: 5px; font-weight: 700; }
+    .badge-verified { background: rgba(44,85,48,0.12); color: var(--primary); border: 1px solid rgba(44,85,48,0.3); }
+    .badge-family { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+    .badge-hydro { background: rgba(200,160,48,0.15); color: #8A6800; border: 1px solid rgba(200,160,48,0.35); }
+
+    main { max-width: 900px; margin: 0 auto; padding: 2rem; }
+
+    .stage-tabs { display: flex; gap: 0.4rem; margin-bottom: 1.75rem; flex-wrap: wrap; }
+    .tab {
+      font-size: 0.8rem; padding: 0.4rem 1.1rem;
+      border-radius: 6px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--text-muted);
+      cursor: pointer; font-weight: 600; transition: all 0.15s;
+    }
+    .tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .tab:hover:not(.active) { border-color: var(--secondary); color: var(--secondary); }
+
+    .section-title {
+      font-size: 0.68rem; font-weight: 800; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem;
+      padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);
+    }
+
+    .param-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 2rem; }
+    .param-card {
+      background: var(--bg); border-radius: 10px;
+      padding: 1rem; border: 1px solid var(--border);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .param-card:hover { border-color: var(--secondary); box-shadow: 0 2px 10px rgba(122,72,32,0.1); }
+    .param-label { font-size: 0.68rem; color: var(--text-muted); margin-bottom: 0.35rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+    .param-value { font-size: 1.2rem; font-weight: 800; color: var(--primary); letter-spacing: -0.02em; }
+    .param-unit { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.1rem; }
+
+    .nutrient-section { margin-bottom: 2rem; }
+    .nutrient-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.65rem; font-size: 0.85rem; }
+    .nutrient-label { width: 28px; font-weight: 800; color: var(--secondary); }
+    .nutrient-bar-bg { flex: 1; height: 7px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+    .nutrient-bar { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); border-radius: 4px; }
+    .nutrient-val { width: 70px; text-align: right; color: var(--text-muted); font-size: 0.8rem; }
+
+    .systems { display: flex; gap: 0.65rem; flex-wrap: wrap; margin-bottom: 2rem; }
+    .system-chip { font-size: 0.78rem; padding: 0.38rem 0.9rem; border-radius: 6px; font-weight: 700; }
+    .system-yes { background: rgba(44,85,48,0.1); color: var(--primary); border: 1px solid rgba(44,85,48,0.25); }
+    .system-no  { background: var(--surface); color: var(--border); border: 1px solid var(--border); text-decoration: line-through; }
+
+    .taxonomy { background: var(--bg); border-radius: 10px; padding: 1.25rem; border: 1px solid var(--border); margin-bottom: 2rem; }
+    .tax-row { display: flex; gap: 1rem; font-size: 0.85rem; padding: 0.35rem 0; border-bottom: 1px solid var(--surface2); }
+    .tax-row:last-child { border-bottom: none; }
+    .tax-key { width: 100px; color: var(--text-muted); font-weight: 600; }
+    .tax-val { font-weight: 700; color: var(--text); }
+
+    .quality-bar-wrap { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 2rem; }
+    .quality-bar-bg { background: var(--surface2); border-radius: 4px; height: 8px; margin-top: 0.5rem; }
+    .quality-bar-fill { height: 100%; border-radius: 4px; background: var(--accent); width: 72%; }
+    .quality-label { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.4rem; }
+
+    .community-box { background: var(--surface); border-radius: 12px; padding: 1.5rem; border: 1px solid var(--border); margin-bottom: 2rem; }
+    .community-box h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 1rem; color: var(--primary); }
+    .comment { display: flex; gap: 0.75rem; margin-bottom: 0.9rem; }
+    .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--secondary); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem; color: #fff; flex-shrink: 0; }
+    .comment-body { background: var(--bg); border-radius: 8px; padding: 0.6rem 0.9rem; border: 1px solid var(--border); font-size: 0.83rem; flex: 1; }
+    .comment-meta { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.2rem; }
+
+    footer { background: var(--primary); color: rgba(255,255,255,0.5); text-align: center; padding: 1.5rem; font-size: 0.8rem; border-top: 3px solid var(--accent); }
+    footer span { color: var(--accent); font-weight: 700; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">flower<span>chino</span></div>
+  <ul>
+    <li><a href="#">Plants</a></li>
+    <li><a href="#">API</a></li>
+    <li><a href="#">Community</a></li>
+    <li><a class="nav-login" href="#">Login</a></li>
+  </ul>
+</nav>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="plant-icon">🍅</div>
+    <div class="hero-meta">
+      <h1>Tomato</h1>
+      <div class="binomial">Solanum lycopersicum L.</div>
+      <div class="badges">
+        <span class="badge badge-verified">✓ Community Verified</span>
+        <span class="badge badge-family">Solanaceae</span>
+        <span class="badge badge-hydro">Hydroponics</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="stage-tabs">
+    <div class="tab">Germinating</div>
+    <div class="tab">Seedling</div>
+    <div class="tab">Vegetative</div>
+    <div class="tab active">Flowering</div>
+    <div class="tab">Fruiting</div>
+    <div class="tab">Harvesting</div>
+  </div>
+
+  <div class="section-title">Hydroponics Parameters — Flowering</div>
+  <div class="param-grid">
+    <div class="param-card"><div class="param-label">pH</div><div class="param-value">5.8–6.2</div></div>
+    <div class="param-card"><div class="param-label">EC</div><div class="param-value">2.5–3.5</div><div class="param-unit">mS/cm</div></div>
+    <div class="param-card"><div class="param-label">TDS</div><div class="param-value">1250–1750</div><div class="param-unit">ppm</div></div>
+    <div class="param-card"><div class="param-label">Water Temp</div><div class="param-value">18–22</div><div class="param-unit">°C</div></div>
+    <div class="param-card"><div class="param-label">Air Temp</div><div class="param-value">20–26</div><div class="param-unit">°C</div></div>
+    <div class="param-card"><div class="param-label">Humidity</div><div class="param-value">50–65</div><div class="param-unit">%</div></div>
+    <div class="param-card"><div class="param-label">VPD</div><div class="param-value">1.0–1.5</div><div class="param-unit">kPa</div></div>
+    <div class="param-card"><div class="param-label">PPFD</div><div class="param-value">500–700</div><div class="param-unit">µmol/m²/s</div></div>
+    <div class="param-card"><div class="param-label">Photoperiod</div><div class="param-value">16</div><div class="param-unit">hours</div></div>
+    <div class="param-card"><div class="param-label">DO</div><div class="param-value">≥ 8</div><div class="param-unit">mg/L</div></div>
+  </div>
+
+  <div class="section-title">Nutrient Profile</div>
+  <div class="nutrient-section">
+    <div class="nutrient-row"><span class="nutrient-label">N</span><div class="nutrient-bar-bg"><div class="nutrient-bar" style="width:55%"></div></div><span class="nutrient-val">120 ppm</span></div>
+    <div class="nutrient-row"><span class="nutrient-label">P</span><div class="nutrient-bar-bg"><div class="nutrient-bar" style="width:35%"></div></div><span class="nutrient-val">70 ppm</span></div>
+    <div class="nutrient-row"><span class="nutrient-label">K</span><div class="nutrient-bar-bg"><div class="nutrient-bar" style="width:90%"></div></div><span class="nutrient-val">250 ppm</span></div>
+    <div class="nutrient-row"><span class="nutrient-label">Ca</span><div class="nutrient-bar-bg"><div class="nutrient-bar" style="width:65%"></div></div><span class="nutrient-val">160 ppm</span></div>
+    <div class="nutrient-row"><span class="nutrient-label">Mg</span><div class="nutrient-bar-bg"><div class="nutrient-bar" style="width:25%"></div></div><span class="nutrient-val">50 ppm</span></div>
+  </div>
+
+  <div class="section-title">Grow System Compatibility</div>
+  <div class="systems">
+    <span class="system-chip system-yes">✓ DWC</span>
+    <span class="system-chip system-yes">✓ NFT</span>
+    <span class="system-chip system-yes">✓ Drip</span>
+    <span class="system-chip system-yes">✓ Ebb &amp; Flow</span>
+    <span class="system-chip system-no">Kratky</span>
+    <span class="system-chip system-no">Wicking</span>
+  </div>
+
+  <div class="section-title">Taxonomy</div>
+  <div class="taxonomy">
+    <div class="tax-row"><span class="tax-key">Kingdom</span><span class="tax-val">Plantae</span></div>
+    <div class="tax-row"><span class="tax-key">Family</span><span class="tax-val">Solanaceae</span></div>
+    <div class="tax-row"><span class="tax-key">Genus</span><span class="tax-val">Solanum</span></div>
+    <div class="tax-row"><span class="tax-key">Species</span><span class="tax-val">S. lycopersicum</span></div>
+    <div class="tax-row"><span class="tax-key">IPNI ID</span><span class="tax-val">320035-2</span></div>
+    <div class="tax-row"><span class="tax-key">GBIF Key</span><span class="tax-val">5284517</span></div>
+  </div>
+
+  <div class="section-title">Data Quality</div>
+  <div class="quality-bar-wrap">
+    <div style="display:flex;justify-content:space-between;font-size:0.85rem;">
+      <span>Completeness</span><span style="font-weight:800;color:var(--accent)">72%</span>
+    </div>
+    <div class="quality-bar-bg"><div class="quality-bar-fill"></div></div>
+    <div class="quality-label">Community Verified · Last reviewed 3 days ago · 12 contributors</div>
+  </div>
+
+  <div class="section-title">Community</div>
+  <div class="community-box">
+    <h3>💬 Discussion</h3>
+    <div class="comment">
+      <div class="avatar">MG</div>
+      <div class="comment-body"><div class="comment-meta">MaxGrower · 2 days ago</div>EC during late flowering can go up to 4.0 without stress if you ramp slowly over a week.</div>
+    </div>
+    <div class="comment">
+      <div class="avatar">SH</div>
+      <div class="comment-body"><div class="comment-meta">SarahHydro · 1 day ago</div>Confirmed. I run 3.8 in fruiting stage, massive yield difference compared to 2.5.</div>
+    </div>
+  </div>
+</main>
+
+<footer>© 2026 <span>Flowerchino</span> · Elastic License 2.0</footer>
+</body>
+</html>
