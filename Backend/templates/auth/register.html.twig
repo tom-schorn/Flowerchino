@@ -1,0 +1,124 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Join Flowerchino{% endblock %}
+
+{% block body %}
+<div class="min-h-[calc(100vh-60px)] flex items-center justify-center p-4">
+    <div class="card bg-base-200 border border-base-300 shadow-md w-full max-w-lg">
+        <div class="card-body gap-5">
+
+            <div>
+                <h1 class="card-title font-lora text-2xl text-primary">Join the community</h1>
+                <p class="text-base-content/60 text-sm mt-1">Create your Flowerchino account — it's free</p>
+            </div>
+
+            <div id="alert-box" role="alert" class="alert hidden">
+                <span id="alert-text"></span>
+            </div>
+
+            <form id="register-form" class="flex flex-col gap-4">
+
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="form-control w-full">
+                        <div class="label">
+                            <span class="label-text font-medium">First name</span>
+                            <span class="label-text-alt text-base-content/40">optional</span>
+                        </div>
+                        <input type="text" id="firstName" name="firstName"
+                               placeholder="Ada"
+                               class="input input-bordered w-full">
+                    </label>
+
+                    <label class="form-control w-full">
+                        <div class="label">
+                            <span class="label-text font-medium">Last name</span>
+                            <span class="label-text-alt text-base-content/40">optional</span>
+                        </div>
+                        <input type="text" id="lastName" name="lastName"
+                               placeholder="Lovelace"
+                               class="input input-bordered w-full">
+                    </label>
+                </div>
+
+                <label class="form-control w-full">
+                    <div class="label"><span class="label-text font-medium">Username</span></div>
+                    <input type="text" id="username" name="username"
+                           placeholder="greenthumb42"
+                           class="input input-bordered w-full" required minlength="3" maxlength="60">
+                </label>
+
+                <label class="form-control w-full">
+                    <div class="label"><span class="label-text font-medium">Email</span></div>
+                    <input type="email" id="email" name="email"
+                           placeholder="you@example.com"
+                           class="input input-bordered w-full" required>
+                </label>
+
+                <label class="form-control w-full">
+                    <div class="label"><span class="label-text font-medium">Password</span></div>
+                    <input type="password" id="password" name="password"
+                           placeholder="Min. 8 characters"
+                           class="input input-bordered w-full" required minlength="8">
+                </label>
+
+                <button type="submit" id="submit-btn" class="btn btn-primary w-full mt-1">
+                    Create account
+                </button>
+            </form>
+
+            <p class="text-center text-sm text-base-content/60">
+                Already have an account?
+                <a href="/login" class="text-primary font-medium hover:underline">Sign in</a>
+            </p>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.getElementById('register-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submit-btn');
+    const alertBox = document.getElementById('alert-box');
+    const alertText = document.getElementById('alert-text');
+
+    btn.disabled = true;
+    btn.textContent = 'Creating account…';
+    alertBox.classList.add('hidden');
+
+    const body = {
+        email:    document.getElementById('email').value,
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value,
+    };
+
+    const firstName = document.getElementById('firstName').value.trim();
+    const lastName  = document.getElementById('lastName').value.trim();
+    if (firstName) body.firstName = firstName;
+    if (lastName)  body.lastName  = lastName;
+
+    const res = await fetch('/v1/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+
+    const json = await res.json();
+
+    if (res.ok) {
+        alertBox.className = 'alert alert-success';
+        alertText.textContent = 'Account created! Redirecting to login…';
+        alertBox.classList.remove('hidden');
+        setTimeout(() => window.location.href = '/login', 1500);
+    } else {
+        alertBox.className = 'alert alert-error';
+        alertText.textContent = Array.isArray(json.error) ? json.error.join(' · ') : json.error;
+        alertBox.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Create account';
+    }
+});
+</script>
+{% endblock %}

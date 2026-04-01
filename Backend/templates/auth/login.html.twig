@@ -1,0 +1,84 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Sign in · Flowerchino{% endblock %}
+
+{% block body %}
+<div class="min-h-[calc(100vh-60px)] flex items-center justify-center p-4">
+    <div class="card bg-base-200 border border-base-300 shadow-md w-full max-w-md">
+        <div class="card-body gap-5">
+
+            <div>
+                <h1 class="card-title font-lora text-2xl text-primary">Welcome back</h1>
+                <p class="text-base-content/60 text-sm mt-1">Sign in to your Flowerchino account</p>
+            </div>
+
+            <div id="error-msg" role="alert" class="alert alert-error hidden">
+                <span id="error-text"></span>
+            </div>
+
+            <form id="login-form" class="flex flex-col gap-4">
+                <label class="form-control w-full">
+                    <div class="label"><span class="label-text font-medium">Email</span></div>
+                    <input type="email" id="email" name="email"
+                           placeholder="you@example.com"
+                           class="input input-bordered w-full" required>
+                </label>
+
+                <label class="form-control w-full">
+                    <div class="label"><span class="label-text font-medium">Password</span></div>
+                    <input type="password" id="password" name="password"
+                           placeholder="••••••••"
+                           class="input input-bordered w-full" required>
+                </label>
+
+                <button type="submit" id="submit-btn" class="btn btn-primary w-full mt-1">
+                    Sign in
+                </button>
+            </form>
+
+            <div class="divider text-base-content/40 text-xs">or</div>
+
+            <p class="text-center text-sm text-base-content/60">
+                No account yet?
+                <a href="/register" class="text-primary font-medium hover:underline">Join Flowerchino</a>
+            </p>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.getElementById('login-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submit-btn');
+    const errBox = document.getElementById('error-msg');
+    const errText = document.getElementById('error-text');
+
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+    errBox.classList.add('hidden');
+
+    const res = await fetch('/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            username: document.getElementById('email').value,
+            password: document.getElementById('password').value,
+        }),
+    });
+
+    if (res.ok) {
+        const { token } = await res.json();
+        localStorage.setItem('jwt', token);
+        window.location.href = '/plants';
+    } else {
+        errText.textContent = 'Invalid email or password.';
+        errBox.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Sign in';
+    }
+});
+</script>
+{% endblock %}
