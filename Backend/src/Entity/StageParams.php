@@ -268,18 +268,6 @@ class StageParams
     public function getPhotoperiodHours(): ?int { return $this->photoperiodHours; }
     public function setPhotoperiodHours(?int $photoperiodHours): static { $this->photoperiodHours = $photoperiodHours; return $this; }
 
-    public function getPhSurviveMin(): ?string { return $this->phSurviveMin; }
-    public function setPhSurviveMin(?string $phSurviveMin): static { $this->phSurviveMin = $phSurviveMin; return $this; }
-
-    public function getPhSurviveMax(): ?string { return $this->phSurviveMax; }
-    public function setPhSurviveMax(?string $phSurviveMax): static { $this->phSurviveMax = $phSurviveMax; return $this; }
-
-    public function getAirTempSurviveMin(): ?string { return $this->airTempSurviveMin; }
-    public function setAirTempSurviveMin(?string $airTempSurviveMin): static { $this->airTempSurviveMin = $airTempSurviveMin; return $this; }
-
-    public function getAirTempSurviveMax(): ?string { return $this->airTempSurviveMax; }
-    public function setAirTempSurviveMax(?string $airTempSurviveMax): static { $this->airTempSurviveMax = $airTempSurviveMax; return $this; }
-
     public function getPhWarnMin(): ?string { return $this->phWarnMin; }
     public function setPhWarnMin(?string $v): static { $this->phWarnMin = $v; return $this; }
     public function getPhWarnMax(): ?string { return $this->phWarnMax; }
