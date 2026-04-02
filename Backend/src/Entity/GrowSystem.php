@@ -21,6 +21,9 @@ class GrowSystem
     #[ORM\Column(length: 100, unique: true)]
     private string $slug;
 
+    #[ORM\Column(length: 20)]
+    private string $type = 'hydroponic';
+
     #[ORM\OneToMany(mappedBy: 'growSystem', targetEntity: GrowSystemCompatibility::class, orphanRemoval: true)]
     private Collection $compatibilities;
 
@@ -36,6 +39,11 @@ class GrowSystem
 
     public function getSlug(): string { return $this->slug; }
     public function setSlug(string $slug): static { $this->slug = $slug; return $this; }
+
+    public function getType(): string { return $this->type; }
+    public function setType(string $type): static { $this->type = $type; return $this; }
+
+    public function isHydroponic(): bool { return $this->type === 'hydroponic'; }
 
     public function getCompatibilities(): Collection { return $this->compatibilities; }
 }

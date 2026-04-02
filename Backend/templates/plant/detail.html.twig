@@ -1,0 +1,316 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ plant.canonicalName }} — Flowerchino{% endblock %}
+
+{% block stylesheets %}
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, -apple-system, sans-serif; background: #f4f6f3; color: #1a1a1a; }
+.page { max-width: 1100px; margin: 0 auto; padding: 2rem 1rem; }
+
+/* ── Header ── */
+.plant-header { background: #1a2e1a; color: #fff; border-radius: 12px; padding: 2rem; margin-bottom: 1.5rem; }
+.plant-header .canonical { font-size: 2rem; font-weight: 700; font-style: italic; }
+.plant-header .scientific { font-size: 0.95rem; color: #9abf9a; margin-top: 0.25rem; }
+.common-names { margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.common-names span { background: rgba(255,255,255,0.12); border-radius: 20px; padding: 0.2rem 0.75rem; font-size: 0.82rem; }
+.badges { margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.badge { border-radius: 6px; padding: 0.2rem 0.6rem; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.badge-draft  { background: #f59e0b; color: #000; }
+.badge-ai     { background: #6366f1; color: #fff; }
+.badge-meta   { background: rgba(255,255,255,0.15); color: #fff; }
+
+/* ── Grid ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.5rem; }
+@media (max-width: 680px) { .grid-2 { grid-template-columns: 1fr; } }
+
+/* ── Card ── */
+.card { background: #fff; border-radius: 10px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.card-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em; color: #6b7280; font-weight: 700; margin-bottom: 1rem; }
+
+.info-row { display: flex; justify-content: space-between; padding: 0.35rem 0; font-size: 0.88rem; border-bottom: 1px solid #f3f4f6; }
+.info-row:last-child { border-bottom: none; }
+.info-row .lbl { color: #6b7280; }
+.info-row .val { font-weight: 600; }
+
+.taxon-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.taxon-table td { padding: 0.3rem 0; }
+.taxon-table td:first-child { color: #6b7280; width: 38%; }
+.taxon-table td:last-child { font-weight: 500; }
+
+.system-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.5rem; }
+.system-tag { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; border-radius: 6px; padding: 0.25rem 0.65rem; font-size: 0.82rem; font-weight: 500; }
+.system-tag.soil { background: #fefce8; border-color: #fde68a; color: #92400e; }
+.system-tag.coco  { background: #fff7ed; border-color: #fed7aa; color: #9a3412; }
+
+.ext-links { display: flex; gap: 1rem; margin-top: 1rem; }
+.ext-links a { font-size: 0.82rem; color: #2563eb; text-decoration: none; }
+.ext-links a:hover { text-decoration: underline; }
+
+/* ── Medium Toggle ── */
+.medium-toggle { display: flex; gap: 0; margin-bottom: 1.25rem; border-radius: 8px; overflow: hidden; border: 1.5px solid #d1d5db; width: fit-content; }
+.medium-btn { padding: 0.5rem 1.5rem; font-size: 0.88rem; font-weight: 600; cursor: pointer; border: none; background: #fff; color: #6b7280; transition: all 0.15s; }
+.medium-btn + .medium-btn { border-left: 1.5px solid #d1d5db; }
+.medium-btn.active { background: #1a2e1a; color: #fff; }
+
+/* ── Stage tabs ── */
+.stage-tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.stage-tab { padding: 0.4rem 1rem; border-radius: 6px; font-size: 0.83rem; font-weight: 600; cursor: pointer; border: 2px solid transparent; background: #fff; color: #374151; transition: all 0.15s; }
+.stage-tab:hover { background: #f0fdf4; border-color: #86efac; }
+.stage-tab.active { background: #1a2e1a; color: #fff; border-color: #1a2e1a; }
+.stage-duration { font-size: 0.72rem; color: #9ca3af; margin-left: 0.3rem; font-weight: 400; }
+
+/* ── Stage content ── */
+.medium-panel { display: none; }
+.medium-panel.active { display: block; }
+.stage-content { display: none; }
+.stage-content.active { display: flex; flex-direction: column; gap: 1.25rem; }
+
+/* ── Section card ── */
+.section-card { background: #fff; border-radius: 10px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.section-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em; color: #6b7280; font-weight: 700; margin-bottom: 1rem; }
+.unit { font-size: 0.72rem; color: #9ca3af; font-weight: 400; }
+
+/* ── Zone table ── */
+.zone-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.zone-table th { padding: 0.3rem 0.5rem; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; text-align: center; border-bottom: 2px solid #e5e7eb; white-space: nowrap; }
+.zone-table th.opt-label  { color: #16a34a; }
+.zone-table th.warn-label { color: #d97706; }
+.zone-table th.crit-label { color: #dc2626; }
+.zone-table th.group-header { padding-bottom: 0.1rem; border-bottom: none; }
+.zone-table td { padding: 0.28rem 0.5rem; text-align: center; color: #374151; font-weight: 500; border-bottom: 1px solid #f3f4f6; }
+.zone-table td:first-child { text-align: left; color: #6b7280; font-weight: 400; font-size: 0.75rem; }
+.zone-table tr:last-child td { border-bottom: none; }
+.zone-table .na { color: #d1d5db; font-weight: 400; }
+.zone-table .col-warn { background: #fffbeb; }
+.zone-table .col-crit { background: #fff5f5; }
+.zone-table .col-tol  { background: #fdf2f8; text-align: center; }
+.zone-table th.tol-label { color: #7c3aed; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="page">
+
+{# ── Header ─────────────────────────────────────────────────── #}
+<div class="plant-header">
+    <div class="canonical">{{ plant.canonicalName }}</div>
+    <div class="scientific">{{ plant.scientificName }}</div>
+    {% if plant.commonNames %}
+    <div class="common-names">
+        {% for cn in plant.commonNames %}
+        <span>{{ cn.name }} <small style="opacity:.6">({{ cn.lang }})</small></span>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <div class="badges" style="margin-top:1rem">
+        <span class="badge badge-{{ plant.qualityGrade }}">{{ plant.qualityGrade }}</span>
+        {% if plant.aiPrefilled %}<span class="badge badge-ai">AI pre-filled</span>{% endif %}
+        {% if plant.completenessScore %}<span class="badge badge-meta">{{ plant.completenessScore }}% complete</span>{% endif %}
+    </div>
+</div>
+
+{# ── Info grid ───────────────────────────────────────────────── #}
+<div class="grid-2">
+    <div class="card">
+        <div class="card-title">Botanical Classification</div>
+        <table class="taxon-table">
+            {% for row in [['Kingdom',plant.kingdom],['Phylum',plant.phylum],['Class',plant.class],['Order',plant.order],['Family',plant.family],['Genus',plant.genus],['Species',plant.species],['Rank',plant.rank],['Status',plant.taxonomicStatus]] %}
+            {% if row[1] %}<tr><td>{{ row[0] }}</td><td>{{ row[1] }}</td></tr>{% endif %}
+            {% endfor %}
+        </table>
+        {% if plant.gbifKey or plant.ipniId %}
+        <div class="ext-links">
+            {% if plant.gbifKey %}<a href="https://www.gbif.org/species/{{ plant.gbifKey }}" target="_blank">GBIF #{{ plant.gbifKey }}</a>{% endif %}
+            {% if plant.ipniId %}<a href="https://www.ipni.org/n/{{ plant.ipniId }}" target="_blank">IPNI {{ plant.ipniId }}</a>{% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-title">Growth Characteristics</div>
+        <div class="info-row"><span class="lbl">Cycle duration</span><span class="val">{{ plant.cycleDaysMin }}–{{ plant.cycleDaysMax }} days</span></div>
+        <div class="info-row"><span class="lbl">Multi-harvest</span><span class="val">{{ plant.multiHarvest ? 'Yes' : 'No' }}</span></div>
+        <div class="info-row"><span class="lbl">Has dormant stage</span><span class="val">{{ plant.hasDormant ? 'Yes' : 'No' }}</span></div>
+        <div class="info-row"><span class="lbl">Yield potential</span><span class="val" style="text-transform:capitalize">{{ plant.yieldPotential }}</span></div>
+
+        {% if compatibilities|length > 0 %}
+        <div class="card-title" style="margin-top:1.25rem">Compatible Grow Systems</div>
+        <div class="system-tags">
+            {% for compat in compatibilities %}
+            <span class="system-tag {{ compat.growSystem.type != 'hydroponic' ? compat.growSystem.type : '' }}">{{ compat.growSystem.name }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# ── Stage Parameters ─────────────────────────────────────────── #}
+{% if paramsByMedium|length > 0 %}
+<div class="card" style="margin-bottom:1.5rem">
+    <div class="card-title" style="margin-bottom:1.25rem">Parameters by Growth Stage</div>
+
+    {# Medium toggle #}
+    {% set mediumLabels = { 'hydroponic': 'Hydroponic', 'soil': 'Soil', 'coco': 'Coco Coir' } %}
+    <div class="medium-toggle" id="mediumToggle">
+        {% for medium, stages in paramsByMedium %}
+        <button class="medium-btn {% if loop.first %}active{% endif %}"
+                onclick="showMedium('{{ medium }}', this)">
+            {{ mediumLabels[medium] ?? medium|capitalize }}
+        </button>
+        {% endfor %}
+    </div>
+
+    {# One panel per medium #}
+    {% for medium, stages in paramsByMedium %}
+    <div class="medium-panel {% if loop.first %}active{% endif %}" id="medium-{{ medium }}">
+
+        {# Stage tabs #}
+        <div class="stage-tabs">
+            {% for stage, sp in stages %}
+            <button class="stage-tab {% if loop.first %}active{% endif %}"
+                    onclick="showStage('{{ medium }}', '{{ stage }}', this)">
+                {{ stage|capitalize }}
+                {% if sp.stageDaysMin %}
+                <span class="stage-duration">{{ sp.stageDaysMin }}–{{ sp.stageDaysMax }}d</span>
+                {% endif %}
+            </button>
+            {% endfor %}
+        </div>
+
+        {# Stage content #}
+        {% for stage, sp in stages %}
+        <div class="stage-content {% if loop.first %}active{% endif %}" id="stage-{{ medium }}-{{ stage }}">
+
+            {# ── Water & Nutrients ── #}
+            <div class="section-card">
+                <div class="section-title">Water & Nutrients</div>
+                <table class="zone-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left" rowspan="2"></th>
+                            <th class="opt-label" rowspan="2">Optimal</th>
+                            <th class="warn-label group-header" colspan="2">Warning</th>
+                            <th class="crit-label group-header" colspan="2">Critical</th>
+                            <th class="tol-label" rowspan="2">Lethal after</th>
+                        </tr>
+                        <tr>
+                            <th class="warn-label">Too low</th>
+                            <th class="warn-label">Too high</th>
+                            <th class="crit-label">Too low</th>
+                            <th class="crit-label">Too high</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% if sp.phMin %}{{ _self.zoneRow('pH', sp.phMin, sp.phMax, sp.phWarnMin, sp.phWarnMax, sp.phCritMin, sp.phCritMax, sp.phCritToleranceHours) }}{% endif %}
+                    {% if sp.ecMin %}{{ _self.zoneRow('EC (mS/cm)', sp.ecMin, sp.ecMax, sp.ecWarnMin, sp.ecWarnMax, sp.ecCritMin, sp.ecCritMax, sp.ecCritToleranceHours) }}{% endif %}
+                    {% if sp.tdsMin %}{{ _self.zoneRow('TDS (ppm)', sp.tdsMin, sp.tdsMax, null, null, null, null, null) }}{% endif %}
+                    {% if sp.waterTempMin %}{{ _self.zoneRow('Water Temp (°C)', sp.waterTempMin, sp.waterTempMax, sp.waterTempWarnMin, sp.waterTempWarnMax, sp.waterTempCritMin, sp.waterTempCritMax, sp.waterTempCritToleranceHours) }}{% endif %}
+                    {% if sp.NPpm %}
+                    {{ _self.zoneRow('Nitrogen (ppm)', sp.NPpm, sp.NPpm, null, null, null, null, null) }}
+                    {{ _self.zoneRow('Phosphorus (ppm)', sp.PPpm, sp.PPpm, null, null, null, null, null) }}
+                    {{ _self.zoneRow('Potassium (ppm)', sp.KPpm, sp.KPpm, null, null, null, null, null) }}
+                    {% endif %}
+                    {% if sp.caPpm %}
+                    {{ _self.zoneRow('Calcium (ppm)', sp.caPpm, sp.caPpm, null, null, null, null, null) }}
+                    {{ _self.zoneRow('Magnesium (ppm)', sp.mgPpm, sp.mgPpm, null, null, null, null, null) }}
+                    {{ _self.zoneRow('Sulfur (ppm)', sp.SPpm, sp.SPpm, null, null, null, null, null) }}
+                    {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            {# ── Environment ── #}
+            <div class="section-card">
+                <div class="section-title">Environment</div>
+                <table class="zone-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left" rowspan="2"></th>
+                            <th class="opt-label" rowspan="2">Optimal</th>
+                            <th class="warn-label group-header" colspan="2">Warning</th>
+                            <th class="crit-label group-header" colspan="2">Critical</th>
+                            <th class="tol-label" rowspan="2">Lethal after</th>
+                        </tr>
+                        <tr>
+                            <th class="warn-label">Too low</th>
+                            <th class="warn-label">Too high</th>
+                            <th class="crit-label">Too low</th>
+                            <th class="crit-label">Too high</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% if sp.airTempMin %}{{ _self.zoneRow('Air Temp (°C)', sp.airTempMin, sp.airTempMax, sp.airTempWarnMin, sp.airTempWarnMax, sp.airTempCritMin, sp.airTempCritMax, sp.airTempCritToleranceHours) }}{% endif %}
+                    {% if sp.humidityMin %}{{ _self.zoneRow('Humidity (%)', sp.humidityMin, sp.humidityMax, sp.humidityWarnMin, sp.humidityWarnMax, sp.humidityCritMin, sp.humidityCritMax, sp.humidityCritToleranceHours) }}{% endif %}
+                    {% if sp.vpdMin %}{{ _self.zoneRow('VPD (kPa)', sp.vpdMin, sp.vpdMax, null, null, null, null, null) }}{% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            {# ── Light ── #}
+            <div class="section-card">
+                <div class="section-title">Light</div>
+                <table class="zone-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left" rowspan="2"></th>
+                            <th class="opt-label" rowspan="2">Optimal</th>
+                            <th class="warn-label group-header" colspan="2">Warning</th>
+                            <th class="crit-label group-header" colspan="2">Critical</th>
+                            <th class="tol-label" rowspan="2">Lethal after</th>
+                        </tr>
+                        <tr>
+                            <th class="warn-label">Too low</th>
+                            <th class="warn-label">Too high</th>
+                            <th class="crit-label">Too low</th>
+                            <th class="crit-label">Too high</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% if sp.ppfdMin %}{{ _self.zoneRow('PPFD (µmol/m²/s)', sp.ppfdMin, sp.ppfdMax, null, null, null, null, null) }}{% endif %}
+                    {% if sp.dliMin %}{{ _self.zoneRow('DLI (mol/m²/day)', sp.dliMin, sp.dliMax, null, null, null, null, null) }}{% endif %}
+                    {% if sp.photoperiodHours %}{{ _self.zoneRow('Photoperiod (h/day)', sp.photoperiodHours, sp.photoperiodHours, null, null, null, null, null) }}{% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>{# end stage-content #}
+        {% endfor %}
+
+    </div>{# end medium-panel #}
+    {% endfor %}
+
+</div>
+{% endif %}
+
+</div>{# end page #}
+
+{# ── Zone row macro ───────────────────────────────────────────── #}
+{% macro zoneRow(label, optMin, optMax, warnMin, warnMax, critMin, critMax, tolHours) %}
+<tr>
+    <td>{{ label }}</td>
+    <td>{% if optMin == optMax %}{{ optMin }}{% else %}{{ optMin }} – {{ optMax }}{% endif %}</td>
+    <td class="col-warn">{% if warnMin is not null %}{{ warnMin }} – {{ optMin }}{% else %}<span class="na">—</span>{% endif %}</td>
+    <td class="col-warn">{% if warnMax is not null %}{{ optMax }} – {{ warnMax }}{% else %}<span class="na">—</span>{% endif %}</td>
+    <td class="col-crit">{% if critMin is not null %}{{ critMin }} – {{ warnMin ?? optMin }}{% else %}<span class="na">—</span>{% endif %}</td>
+    <td class="col-crit">{% if critMax is not null %}{{ warnMax ?? optMax }} – {{ critMax }}{% else %}<span class="na">—</span>{% endif %}</td>
+    <td class="col-tol">{% if tolHours is not null %}<strong>{{ tolHours }}h</strong>{% else %}<span class="na">—</span>{% endif %}</td>
+</tr>
+{% endmacro %}
+
+<script>
+function showMedium(medium, btn) {
+    document.querySelectorAll('.medium-panel').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.medium-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('medium-' + medium).classList.add('active');
+    btn.classList.add('active');
+}
+function showStage(medium, stage, btn) {
+    const panel = document.getElementById('medium-' + medium);
+    panel.querySelectorAll('.stage-content').forEach(el => el.classList.remove('active'));
+    panel.querySelectorAll('.stage-tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('stage-' + medium + '-' + stage).classList.add('active');
+    btn.classList.add('active');
+}
+</script>
+{% endblock %}

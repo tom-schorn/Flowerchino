@@ -25,6 +25,12 @@ class StageParams
     #[ORM\Column(length: 20)]
     private string $stage;
 
+    #[ORM\Column(nullable: true)]
+    private ?int $stageDaysMin = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $stageDaysMax = null;
+
     // Water & Nutrients
     #[ORM\Column(type: 'decimal', precision: 4, scale: 2, nullable: true)]
     private ?string $phMin = null;
@@ -105,24 +111,68 @@ class StageParams
     #[ORM\Column(nullable: true)]
     private ?int $photoperiodHours = null;
 
-    // Survival thresholds (see #10)
+    // Thresholds: warning (amber) + critical/lethal (red) — per #10
+    // pH
     #[ORM\Column(type: 'decimal', precision: 4, scale: 2, nullable: true)]
-    private ?string $phSurviveMin = null;
-
+    private ?string $phWarnMin = null;
     #[ORM\Column(type: 'decimal', precision: 4, scale: 2, nullable: true)]
-    private ?string $phSurviveMax = null;
+    private ?string $phWarnMax = null;
+    #[ORM\Column(type: 'decimal', precision: 4, scale: 2, nullable: true)]
+    private ?string $phCritMin = null;
+    #[ORM\Column(type: 'decimal', precision: 4, scale: 2, nullable: true)]
+    private ?string $phCritMax = null;
 
-    #[ORM\Column(type: 'decimal', precision: 4, scale: 1, nullable: true)]
-    private ?string $airTempSurviveMin = null;
-
-    #[ORM\Column(type: 'decimal', precision: 4, scale: 1, nullable: true)]
-    private ?string $airTempSurviveMax = null;
-
+    // EC
     #[ORM\Column(type: 'decimal', precision: 5, scale: 2, nullable: true)]
-    private ?string $ecSurviveMin = null;
-
+    private ?string $ecWarnMin = null;
     #[ORM\Column(type: 'decimal', precision: 5, scale: 2, nullable: true)]
-    private ?string $ecSurviveMax = null;
+    private ?string $ecWarnMax = null;
+    #[ORM\Column(type: 'decimal', precision: 5, scale: 2, nullable: true)]
+    private ?string $ecCritMin = null;
+    #[ORM\Column(type: 'decimal', precision: 5, scale: 2, nullable: true)]
+    private ?string $ecCritMax = null;
+
+    // Air temperature
+    #[ORM\Column(type: 'decimal', precision: 4, scale: 1, nullable: true)]
+    private ?string $airTempWarnMin = null;
+    #[ORM\Column(type: 'decimal', precision: 4, scale: 1, nullable: true)]
+    private ?string $airTempWarnMax = null;
+    #[ORM\Column(type: 'decimal', precision: 4, scale: 1, nullable: true)]
+    private ?string $airTempCritMin = null;
+    #[ORM\Column(type: 'decimal', precision: 4, scale: 1, nullable: true)]
+    private ?string $airTempCritMax = null;
+
+    // Water temperature
+    #[ORM\Column(type: 'decimal', precision: 4, scale: 1, nullable: true)]
+    private ?string $waterTempWarnMin = null;
+    #[ORM\Column(type: 'decimal', precision: 4, scale: 1, nullable: true)]
+    private ?string $waterTempWarnMax = null;
+    #[ORM\Column(type: 'decimal', precision: 4, scale: 1, nullable: true)]
+    private ?string $waterTempCritMin = null;
+    #[ORM\Column(type: 'decimal', precision: 4, scale: 1, nullable: true)]
+    private ?string $waterTempCritMax = null;
+
+    // Humidity
+    #[ORM\Column(nullable: true)]
+    private ?int $humidityWarnMin = null;
+    #[ORM\Column(nullable: true)]
+    private ?int $humidityWarnMax = null;
+    #[ORM\Column(nullable: true)]
+    private ?int $humidityCritMin = null;
+    #[ORM\Column(nullable: true)]
+    private ?int $humidityCritMax = null;
+
+    // Critical tolerance — hours until irreversible damage in critical zone
+    #[ORM\Column(type: 'decimal', precision: 5, scale: 1, nullable: true)]
+    private ?string $phCritToleranceHours = null;
+    #[ORM\Column(type: 'decimal', precision: 5, scale: 1, nullable: true)]
+    private ?string $ecCritToleranceHours = null;
+    #[ORM\Column(type: 'decimal', precision: 5, scale: 1, nullable: true)]
+    private ?string $airTempCritToleranceHours = null;
+    #[ORM\Column(type: 'decimal', precision: 5, scale: 1, nullable: true)]
+    private ?string $waterTempCritToleranceHours = null;
+    #[ORM\Column(type: 'decimal', precision: 5, scale: 1, nullable: true)]
+    private ?string $humidityCritToleranceHours = null;
 
     public function getId(): ?int { return $this->id; }
 
@@ -134,6 +184,11 @@ class StageParams
 
     public function getStage(): string { return $this->stage; }
     public function setStage(string $stage): static { $this->stage = $stage; return $this; }
+
+    public function getStageDaysMin(): ?int { return $this->stageDaysMin; }
+    public function setStageDaysMin(?int $v): static { $this->stageDaysMin = $v; return $this; }
+    public function getStageDaysMax(): ?int { return $this->stageDaysMax; }
+    public function setStageDaysMax(?int $v): static { $this->stageDaysMax = $v; return $this; }
 
     public function getPhMin(): ?string { return $this->phMin; }
     public function setPhMin(?string $phMin): static { $this->phMin = $phMin; return $this; }
@@ -225,9 +280,59 @@ class StageParams
     public function getAirTempSurviveMax(): ?string { return $this->airTempSurviveMax; }
     public function setAirTempSurviveMax(?string $airTempSurviveMax): static { $this->airTempSurviveMax = $airTempSurviveMax; return $this; }
 
-    public function getEcSurviveMin(): ?string { return $this->ecSurviveMin; }
-    public function setEcSurviveMin(?string $ecSurviveMin): static { $this->ecSurviveMin = $ecSurviveMin; return $this; }
+    public function getPhWarnMin(): ?string { return $this->phWarnMin; }
+    public function setPhWarnMin(?string $v): static { $this->phWarnMin = $v; return $this; }
+    public function getPhWarnMax(): ?string { return $this->phWarnMax; }
+    public function setPhWarnMax(?string $v): static { $this->phWarnMax = $v; return $this; }
+    public function getPhCritMin(): ?string { return $this->phCritMin; }
+    public function setPhCritMin(?string $v): static { $this->phCritMin = $v; return $this; }
+    public function getPhCritMax(): ?string { return $this->phCritMax; }
+    public function setPhCritMax(?string $v): static { $this->phCritMax = $v; return $this; }
 
-    public function getEcSurviveMax(): ?string { return $this->ecSurviveMax; }
-    public function setEcSurviveMax(?string $ecSurviveMax): static { $this->ecSurviveMax = $ecSurviveMax; return $this; }
+    public function getEcWarnMin(): ?string { return $this->ecWarnMin; }
+    public function setEcWarnMin(?string $v): static { $this->ecWarnMin = $v; return $this; }
+    public function getEcWarnMax(): ?string { return $this->ecWarnMax; }
+    public function setEcWarnMax(?string $v): static { $this->ecWarnMax = $v; return $this; }
+    public function getEcCritMin(): ?string { return $this->ecCritMin; }
+    public function setEcCritMin(?string $v): static { $this->ecCritMin = $v; return $this; }
+    public function getEcCritMax(): ?string { return $this->ecCritMax; }
+    public function setEcCritMax(?string $v): static { $this->ecCritMax = $v; return $this; }
+
+    public function getAirTempWarnMin(): ?string { return $this->airTempWarnMin; }
+    public function setAirTempWarnMin(?string $v): static { $this->airTempWarnMin = $v; return $this; }
+    public function getAirTempWarnMax(): ?string { return $this->airTempWarnMax; }
+    public function setAirTempWarnMax(?string $v): static { $this->airTempWarnMax = $v; return $this; }
+    public function getAirTempCritMin(): ?string { return $this->airTempCritMin; }
+    public function setAirTempCritMin(?string $v): static { $this->airTempCritMin = $v; return $this; }
+    public function getAirTempCritMax(): ?string { return $this->airTempCritMax; }
+    public function setAirTempCritMax(?string $v): static { $this->airTempCritMax = $v; return $this; }
+
+    public function getWaterTempWarnMin(): ?string { return $this->waterTempWarnMin; }
+    public function setWaterTempWarnMin(?string $v): static { $this->waterTempWarnMin = $v; return $this; }
+    public function getWaterTempWarnMax(): ?string { return $this->waterTempWarnMax; }
+    public function setWaterTempWarnMax(?string $v): static { $this->waterTempWarnMax = $v; return $this; }
+    public function getWaterTempCritMin(): ?string { return $this->waterTempCritMin; }
+    public function setWaterTempCritMin(?string $v): static { $this->waterTempCritMin = $v; return $this; }
+    public function getWaterTempCritMax(): ?string { return $this->waterTempCritMax; }
+    public function setWaterTempCritMax(?string $v): static { $this->waterTempCritMax = $v; return $this; }
+
+    public function getHumidityWarnMin(): ?int { return $this->humidityWarnMin; }
+    public function setHumidityWarnMin(?int $v): static { $this->humidityWarnMin = $v; return $this; }
+    public function getHumidityWarnMax(): ?int { return $this->humidityWarnMax; }
+    public function setHumidityWarnMax(?int $v): static { $this->humidityWarnMax = $v; return $this; }
+    public function getHumidityCritMin(): ?int { return $this->humidityCritMin; }
+    public function setHumidityCritMin(?int $v): static { $this->humidityCritMin = $v; return $this; }
+    public function getHumidityCritMax(): ?int { return $this->humidityCritMax; }
+    public function setHumidityCritMax(?int $v): static { $this->humidityCritMax = $v; return $this; }
+
+    public function getPhCritToleranceHours(): ?string { return $this->phCritToleranceHours; }
+    public function setPhCritToleranceHours(?string $v): static { $this->phCritToleranceHours = $v; return $this; }
+    public function getEcCritToleranceHours(): ?string { return $this->ecCritToleranceHours; }
+    public function setEcCritToleranceHours(?string $v): static { $this->ecCritToleranceHours = $v; return $this; }
+    public function getAirTempCritToleranceHours(): ?string { return $this->airTempCritToleranceHours; }
+    public function setAirTempCritToleranceHours(?string $v): static { $this->airTempCritToleranceHours = $v; return $this; }
+    public function getWaterTempCritToleranceHours(): ?string { return $this->waterTempCritToleranceHours; }
+    public function setWaterTempCritToleranceHours(?string $v): static { $this->waterTempCritToleranceHours = $v; return $this; }
+    public function getHumidityCritToleranceHours(): ?string { return $this->humidityCritToleranceHours; }
+    public function setHumidityCritToleranceHours(?string $v): static { $this->humidityCritToleranceHours = $v; return $this; }
 }

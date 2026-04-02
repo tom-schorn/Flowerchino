@@ -38,7 +38,7 @@ class Plant
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $class = null;
 
-    #[ORM\Column(length: 100, nullable: true)]
+    #[ORM\Column(name: 'taxon_order', length: 100, nullable: true)]
     private ?string $order = null;
 
     #[ORM\Column(length: 100, nullable: true)]
