@@ -1,0 +1,197 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Request a Plant — Flowerchino{% endblock %}
+
+{% block stylesheets %}
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, -apple-system, sans-serif; background: #f4f6f3; color: #1a1a1a; }
+.page { max-width: 640px; margin: 0 auto; padding: 3rem 1rem; }
+
+.page-header { text-align: center; margin-bottom: 2.5rem; }
+.page-header h1 { font-size: 1.8rem; font-weight: 700; color: #1a2e1a; }
+.page-header p  { color: #6b7280; margin-top: 0.5rem; font-size: 0.95rem; }
+
+.search-box { position: relative; }
+.search-input {
+    width: 100%;
+    padding: 0.9rem 1.1rem;
+    font-size: 1rem;
+    border: 2px solid #d1d5db;
+    border-radius: 10px;
+    outline: none;
+    background: #fff;
+    transition: border-color 0.15s;
+}
+.search-input:focus { border-color: #1a2e1a; }
+
+.suggestions {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: #fff;
+    border: 1.5px solid #d1d5db;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.10);
+    z-index: 100;
+    max-height: 320px;
+    overflow-y: auto;
+    display: none;
+}
+.suggestions.open { display: block; }
+
+.suggestion-item {
+    padding: 0.7rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.1s;
+}
+.suggestion-item:last-child { border-bottom: none; }
+.suggestion-item:hover, .suggestion-item.selected { background: #f0fdf4; }
+.suggestion-item .sname { font-style: italic; font-weight: 600; font-size: 0.9rem; }
+.suggestion-item .smeta { font-size: 0.75rem; color: #9ca3af; margin-top: 0.1rem; }
+
+.confirm-card {
+    margin-top: 1.5rem;
+    background: #fff;
+    border: 2px solid #86efac;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    display: none;
+}
+.confirm-card.visible { display: block; }
+.confirm-card .plant-name { font-size: 1.1rem; font-weight: 700; font-style: italic; }
+.confirm-card .plant-meta { font-size: 0.82rem; color: #6b7280; margin-top: 0.2rem; }
+.confirm-card .submit-btn {
+    margin-top: 1rem;
+    width: 100%;
+    padding: 0.75rem;
+    background: #1a2e1a;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.confirm-card .submit-btn:hover { background: #2d4a2d; }
+
+.hint { margin-top: 1.5rem; font-size: 0.82rem; color: #9ca3af; text-align: center; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="page">
+
+    <div class="page-header">
+        <h1>Request a Plant</h1>
+        <p>Search for any plant species. If it's not in our database yet, we'll generate the growing parameters using AI.</p>
+    </div>
+
+    <div class="search-box">
+        <input type="text" class="search-input" id="searchInput"
+               placeholder="e.g. Solanum lycopersicum, Tomato, Cannabis sativa…"
+               autocomplete="off" spellcheck="false">
+        <div class="suggestions" id="suggestions"></div>
+    </div>
+
+    <div class="confirm-card" id="confirmCard">
+        <div class="plant-name" id="confirmName"></div>
+        <div class="plant-meta" id="confirmMeta"></div>
+        <form method="POST" action="{{ path('plant_request_submit') }}" id="submitForm">
+            <input type="hidden" name="gbif_key" id="hiddenGbifKey">
+            <input type="hidden" name="canonical_name" id="hiddenName">
+            <button type="submit" class="submit-btn">Generate growing parameters →</button>
+        </form>
+    </div>
+
+    <p class="hint">Powered by GBIF taxonomy · AI-filled data by Claude · Community-verified over time</p>
+
+</div>
+
+<script>
+let debounceTimer;
+const input       = document.getElementById('searchInput');
+const suggestions = document.getElementById('suggestions');
+const confirmCard = document.getElementById('confirmCard');
+const confirmName = document.getElementById('confirmName');
+const confirmMeta = document.getElementById('confirmMeta');
+const hiddenKey   = document.getElementById('hiddenGbifKey');
+const hiddenName  = document.getElementById('hiddenName');
+
+input.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    const q = input.value.trim();
+    if (q.length < 2) { closeSuggestions(); return; }
+    debounceTimer = setTimeout(() => fetchSuggestions(q), 250);
+});
+
+input.addEventListener('keydown', (e) => {
+    const items = suggestions.querySelectorAll('.suggestion-item');
+    const sel   = suggestions.querySelector('.selected');
+    let idx     = sel ? [...items].indexOf(sel) : -1;
+    if (e.key === 'ArrowDown') { e.preventDefault(); select(items, Math.min(idx + 1, items.length - 1)); }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); select(items, Math.max(idx - 1, 0)); }
+    if (e.key === 'Enter' && sel) { e.preventDefault(); sel.click(); }
+    if (e.key === 'Escape') { closeSuggestions(); }
+});
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-box')) closeSuggestions();
+});
+
+async function fetchSuggestions(q) {
+    const res  = await fetch(`/api/gbif-suggest?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    renderSuggestions(data);
+}
+
+function renderSuggestions(items) {
+    if (!items.length) { closeSuggestions(); return; }
+    suggestions.innerHTML = items.map(item => `
+        <div class="suggestion-item"
+             data-key="${item.key}"
+             data-name="${escHtml(item.canonical_name)}"
+             data-family="${escHtml(item.family ?? '')}"
+             data-rank="${escHtml(item.rank ?? '')}">
+            <div class="sname">${escHtml(item.canonical_name)}</div>
+            <div class="smeta">${[item.family, item.rank].filter(Boolean).join(' · ')}</div>
+        </div>
+    `).join('');
+    suggestions.querySelectorAll('.suggestion-item').forEach(el => {
+        el.addEventListener('click', () => pickItem(el));
+    });
+    suggestions.classList.add('open');
+}
+
+function select(items, idx) {
+    items.forEach(el => el.classList.remove('selected'));
+    if (items[idx]) items[idx].classList.add('selected');
+}
+
+function pickItem(el) {
+    const key    = el.dataset.key;
+    const name   = el.dataset.name;
+    const family = el.dataset.family;
+    const rank   = el.dataset.rank;
+
+    input.value         = name;
+    hiddenKey.value     = key;
+    hiddenName.value    = name;
+    confirmName.textContent = name;
+    confirmMeta.textContent = [family, rank, `GBIF #${key}`].filter(Boolean).join(' · ');
+    confirmCard.classList.add('visible');
+    closeSuggestions();
+}
+
+function closeSuggestions() {
+    suggestions.classList.remove('open');
+    suggestions.innerHTML = '';
+}
+
+function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+{% endblock %}

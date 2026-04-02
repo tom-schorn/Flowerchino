@@ -1,0 +1,89 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Generating {{ plant.canonicalName }} — Flowerchino{% endblock %}
+
+{% block stylesheets %}
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, -apple-system, sans-serif; background: #f4f6f3; color: #1a1a1a; }
+.page { max-width: 520px; margin: 0 auto; padding: 5rem 1rem; text-align: center; }
+
+.spinner {
+    width: 52px; height: 52px;
+    border: 4px solid #d1d5db;
+    border-top-color: #1a2e1a;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+    margin: 0 auto 2rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+h1 { font-size: 1.5rem; font-weight: 700; color: #1a2e1a; margin-bottom: 0.5rem; }
+.sub { color: #6b7280; font-size: 0.92rem; margin-bottom: 2rem; }
+
+.status-steps { list-style: none; text-align: left; display: inline-block; }
+.status-steps li { display: flex; align-items: center; gap: 0.6rem; padding: 0.35rem 0; font-size: 0.88rem; color: #6b7280; }
+.status-steps li.done { color: #16a34a; }
+.status-steps li .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #d1d5db;
+    flex-shrink: 0;
+}
+.status-steps li.done .dot { background: #16a34a; }
+.status-steps li.active .dot { background: #1a2e1a; animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.4); } }
+
+.elapsed { margin-top: 1.5rem; font-size: 0.8rem; color: #9ca3af; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="page">
+    <div class="spinner"></div>
+    <h1>Generating <em>{{ plant.canonicalName }}</em></h1>
+    <p class="sub">Claude is researching growth stages, nutrient requirements, and environmental parameters. This usually takes 15–30 seconds.</p>
+
+    <ul class="status-steps" id="steps">
+        <li class="done" id="step-queued"><span class="dot"></span> Request queued</li>
+        <li class="active" id="step-ai"><span class="dot"></span> AI generating plant data</li>
+        <li id="step-saving"><span class="dot"></span> Saving to database</li>
+        <li id="step-done"><span class="dot"></span> Done</li>
+    </ul>
+
+    <p class="elapsed" id="elapsed">0s</p>
+</div>
+
+<script>
+const plantId  = {{ plant.id }};
+const plantSlug = {{ plant.slug|json_encode }};
+const start    = Date.now();
+let   interval;
+
+function updateElapsed() {
+    const s = Math.floor((Date.now() - start) / 1000);
+    document.getElementById('elapsed').textContent = s + 's elapsed';
+}
+
+async function poll() {
+    updateElapsed();
+    try {
+        const res  = await fetch(`/v1/plants/${plantId}/status`);
+        const body = await res.json();
+        if (body.data?.quality_grade && body.data.quality_grade !== 'pending') {
+            // Done — mark steps and redirect
+            document.getElementById('step-ai').className    = 'done';
+            document.getElementById('step-saving').className = 'done';
+            document.getElementById('step-done').className   = 'done active';
+            clearInterval(interval);
+            setTimeout(() => {
+                window.location.href = '/plants/' + plantSlug;
+            }, 800);
+        }
+    } catch (_) { /* network hiccup — keep polling */ }
+}
+
+interval = setInterval(poll, 2000);
+poll();
+</script>
+{% endblock %}
