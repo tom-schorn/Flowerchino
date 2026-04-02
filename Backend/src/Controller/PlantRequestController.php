@@ -86,9 +86,10 @@ class PlantRequestController extends AbstractController
         }
 
         $url = 'https://api.gbif.org/v1/species/suggest?' . http_build_query([
-            'q'     => $q,
-            'rank'  => 'SPECIES',
-            'limit' => 10,
+            'q'        => $q,
+            'rank'     => 'SPECIES',
+            'kingdom'  => 'Plantae',
+            'limit'    => 10,
         ]);
 
         $ctx  = stream_context_create(['http' => ['timeout' => 5]]);

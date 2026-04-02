@@ -8,6 +8,7 @@ use App\Entity\StageParams;
 use App\Message\FillPlantMessage;
 use App\Repository\PlantRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -19,6 +20,7 @@ class FillPlantHandler
         private PlantRepository $plants,
         private EntityManagerInterface $em,
         private HttpClientInterface $httpClient,
+        private LoggerInterface $logger,
         #[Autowire('%env(ANTHROPIC_API_KEY)%')]
         private string $apiKey,
     ) {}
@@ -32,11 +34,16 @@ class FillPlantHandler
 
         $json = $this->askClaude($message->canonicalName, $message->gbifKey);
         if (!$json) {
+            $this->logger->error('FillPlantHandler: Claude returned no parseable JSON', [
+                'plant_id' => $message->plantId,
+                'name'     => $message->canonicalName,
+            ]);
             return;
         }
 
         $this->applyData($plant, $json);
         $this->em->flush();
+        $this->logger->info('FillPlantHandler: plant filled', ['plant_id' => $message->plantId, 'grade' => $plant->getQualityGrade()]);
     }
 
     private function askClaude(string $name, int $gbifKey): ?array
@@ -51,39 +58,65 @@ class FillPlantHandler
             ],
             'json' => [
                 'model'      => 'claude-haiku-4-5-20251001',
-                'max_tokens' => 4096,
+                'max_tokens' => 8192,
                 'messages'   => [
                     ['role' => 'user', 'content' => $prompt],
                 ],
             ],
         ]);
 
-        $body = $response->toArray();
+        $body = $response->toArray(false); // false = don't throw on 4xx
+        if (isset($body['error'])) {
+            $this->logger->error('Anthropic API error', ['error' => $body['error']]);
+            return null;
+        }
         $text = $body['content'][0]['text'] ?? '';
 
-        // Extract JSON block from response
-        if (preg_match('/```json\s*([\s\S]+?)\s*```/', $text, $m)) {
+        // Try: ```json ... ``` block
+        if (preg_match('/```json\s*([\s\S]+?)\s*```/i', $text, $m)) {
             $text = $m[1];
+        } elseif (preg_match('/```\s*([\s\S]+?)\s*```/i', $text, $m)) {
+            // Try: ``` ... ``` block without language tag
+            $text = $m[1];
+        } else {
+            // Try: first { ... } object in response
+            if (preg_match('/(\{[\s\S]+\})/s', $text, $m)) {
+                $text = $m[1];
+            }
         }
 
-        return json_decode($text, true) ?: null;
+        $decoded = json_decode($text, true);
+        if (!$decoded) {
+            $this->logger->error('FillPlantHandler: JSON parse failed', ['raw' => substr($text, 0, 500)]);
+        }
+        return $decoded ?: null;
     }
 
     private function buildPrompt(string $name, int $gbifKey): string
     {
+        $stageFields = '"days_min": 5, "days_max": 14, "ph_min": 6.0, "ph_max": 6.5, "ph_warn_min": 5.8, "ph_warn_max": 6.8, "ph_crit_min": 5.0, "ph_crit_max": 7.5, "ph_tol_hours": 72, "ec_min": 1.0, "ec_max": 1.8, "ec_warn_min": 0.8, "ec_warn_max": 2.2, "ec_crit_min": 0.5, "ec_crit_max": 3.0, "ec_tol_hours": 48, "tds_min": 500, "tds_max": 900, "water_temp_min": 20, "water_temp_max": 24, "water_temp_warn_min": 18, "water_temp_warn_max": 26, "water_temp_crit_min": 14, "water_temp_crit_max": 30, "water_temp_tol_hours": 6, "air_temp_min": 22, "air_temp_max": 26, "air_temp_warn_min": 18, "air_temp_warn_max": 30, "air_temp_crit_min": 14, "air_temp_crit_max": 36, "air_temp_tol_hours": 4, "humidity_min": 60, "humidity_max": 80, "humidity_warn_min": 50, "humidity_warn_max": 90, "humidity_crit_min": 35, "humidity_crit_max": 98, "humidity_tol_hours": 20, "vpd_min": 0.6, "vpd_max": 1.0, "ppfd_min": 200, "ppfd_max": 500, "dli_min": 12, "dli_max": 20, "photoperiod_hours": 18, "n_ppm": 100, "p_ppm": 60, "k_ppm": 120, "ca_ppm": 100, "mg_ppm": 30, "s_ppm": 25';
+
+        $soilFields = '"days_min": 5, "days_max": 14, "ph_min": 6.2, "ph_max": 7.0, "ph_warn_min": 5.8, "ph_warn_max": 7.3, "ph_crit_min": 5.0, "ph_crit_max": 8.0, "ph_tol_hours": 96, "air_temp_min": 22, "air_temp_max": 26, "air_temp_warn_min": 18, "air_temp_warn_max": 30, "air_temp_crit_min": 12, "air_temp_crit_max": 38, "air_temp_tol_hours": 6, "humidity_min": 60, "humidity_max": 80, "humidity_warn_min": 50, "humidity_warn_max": 90, "humidity_crit_min": 35, "humidity_crit_max": 98, "humidity_tol_hours": 24, "vpd_min": 0.6, "vpd_max": 1.0, "ppfd_min": 200, "ppfd_max": 500, "dli_min": 12, "dli_max": 20, "photoperiod_hours": 18, "n_ppm": 80, "p_ppm": 50, "k_ppm": 100, "ca_ppm": 80, "mg_ppm": 25, "s_ppm": 20';
+
         return <<<PROMPT
-You are a plant cultivation expert. Fill in detailed growing parameters for the plant "{$name}" (GBIF key: {$gbifKey}).
+You are a plant cultivation expert. Provide accurate growing parameters for "{$name}" (GBIF key: {$gbifKey}).
 
-Return ONLY a JSON object with this exact structure (no explanation, no markdown except the json block):
+Reply with ONLY a valid JSON object — no explanation, no text before or after, just the JSON.
 
-```json
+Use these exact keys. Replace ALL numeric values with accurate values for this specific plant. All numbers must be JSON numbers (not strings).
+
+For "stages" (hydroponic, use all fields including ec/tds/water_temp):
+For "soil_stages" (soil growing, omit ec_*, tds_*, water_temp_* fields entirely).
+
+Available compatible_systems values: dwc, nft, kratky, aeroponics, ebb-flow, drip, soil, coco
+
 {
-  "canonical_name": "...",
-  "scientific_name": "... Authorship",
-  "authorship": "...",
-  "common_names": [{"lang": "en", "name": "..."}, {"lang": "de", "name": "..."}],
+  "canonical_name": "{$name}",
+  "scientific_name": "Full name with authorship",
+  "authorship": "Author",
+  "common_names": [{"lang": "en", "name": "English name"}, {"lang": "de", "name": "German name"}],
   "kingdom": "Plantae",
-  "phylum": "...",
+  "phylum": "Tracheophyta",
   "class": "...",
   "order": "...",
   "family": "...",
@@ -98,44 +131,22 @@ Return ONLY a JSON object with this exact structure (no explanation, no markdown
   "yield_potential": "medium",
   "compatible_systems": ["dwc", "nft", "soil"],
   "stages": {
-    "germinating": {
-      "days_min": 3, "days_max": 10,
-      "ph_min": 5.8, "ph_max": 6.2, "ph_warn_min": 5.5, "ph_warn_max": 6.5, "ph_crit_min": 5.0, "ph_crit_max": 7.0, "ph_tol_hours": 72,
-      "ec_min": 0.8, "ec_max": 1.2, "ec_warn_min": 0.5, "ec_warn_max": 1.5, "ec_crit_min": 0.3, "ec_crit_max": 2.0, "ec_tol_hours": 48,
-      "tds_min": 400, "tds_max": 600,
-      "water_temp_min": 22, "water_temp_max": 26, "water_temp_warn_min": 20, "water_temp_warn_max": 28, "water_temp_crit_min": 16, "water_temp_crit_max": 32, "water_temp_tol_hours": 6,
-      "air_temp_min": 24, "air_temp_max": 28, "air_temp_warn_min": 20, "air_temp_warn_max": 32, "air_temp_crit_min": 16, "air_temp_crit_max": 38, "air_temp_tol_hours": 4,
-      "humidity_min": 70, "humidity_max": 90, "humidity_warn_min": 60, "humidity_warn_max": 95, "humidity_crit_min": 45, "humidity_crit_max": 99, "humidity_tol_hours": 24,
-      "vpd_min": 0.4, "vpd_max": 0.8,
-      "ppfd_min": 100, "ppfd_max": 300, "dli_min": 6, "dli_max": 12, "photoperiod_hours": 18,
-      "n_ppm": 50, "p_ppm": 40, "k_ppm": 50, "ca_ppm": 60, "mg_ppm": 20, "s_ppm": 15
-    },
-    "seedling": { ... same fields ... },
-    "vegetative": { ... same fields ... },
-    "flowering": { ... same fields ... },
-    "fruiting": { ... same fields ... },
-    "harvesting": { ... same fields ... }
+    "germinating": { {$stageFields} },
+    "seedling":    { {$stageFields} },
+    "vegetative":  { {$stageFields} },
+    "flowering":   { {$stageFields} },
+    "fruiting":    { {$stageFields} },
+    "harvesting":  { {$stageFields} }
   },
   "soil_stages": {
-    "germinating": {
-      "days_min": 5, "days_max": 14,
-      "ph_min": 6.0, "ph_max": 7.0, "ph_warn_min": 5.5, "ph_warn_max": 7.5, "ph_crit_min": 5.0, "ph_crit_max": 8.0, "ph_tol_hours": 96,
-      "air_temp_min": 22, "air_temp_max": 28, "air_temp_warn_min": 18, "air_temp_warn_max": 33, "air_temp_crit_min": 12, "air_temp_crit_max": 40, "air_temp_tol_hours": 6,
-      "humidity_min": 65, "humidity_max": 85, "humidity_warn_min": 55, "humidity_warn_max": 92, "humidity_crit_min": 40, "humidity_crit_max": 98, "humidity_tol_hours": 30,
-      "vpd_min": 0.4, "vpd_max": 0.8,
-      "ppfd_min": 100, "ppfd_max": 300, "dli_min": 6, "dli_max": 12, "photoperiod_hours": 18,
-      "n_ppm": 30, "p_ppm": 25, "k_ppm": 30, "ca_ppm": 40, "mg_ppm": 15, "s_ppm": 10
-    },
-    "seedling": { ... same fields, no ec/tds/water_temp ... },
-    "vegetative": { ... },
-    "flowering": { ... },
-    "fruiting": { ... },
-    "harvesting": { ... }
+    "germinating": { {$soilFields} },
+    "seedling":    { {$soilFields} },
+    "vegetative":  { {$soilFields} },
+    "flowering":   { {$soilFields} },
+    "fruiting":    { {$soilFields} },
+    "harvesting":  { {$soilFields} }
   }
 }
-```
-
-Use accurate, stage-differentiated values based on published horticultural data. All decimal fields as numbers, not strings. Omit ec/tds/water_temp from soil_stages entirely (set them null).
 PROMPT;
     }
 
