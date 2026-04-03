@@ -1,17 +1,82 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <title>{% block title %}Welcome!{% endblock %}</title>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
-        {% block stylesheets %}
-        {% endblock %}
+<html lang="en" data-theme="flowerchino">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Flowerchino{% endblock %}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>">
 
-        {% block javascripts %}
-            {% block importmap %}{{ importmap('app') }}{% endblock %}
-        {% endblock %}
-    </head>
-    <body>
-        {% block body %}{% endblock %}
-    </body>
+    {# Tailwind + DaisyUI #}
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        forest: { DEFAULT: '#1a2e1a', light: '#2d4a2d', muted: '#9abf9a' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    {# DaisyUI custom theme #}
+    <style>
+        [data-theme="flowerchino"] {
+            --p: 142 36% 14%;   /* primary = forest green */
+            --pf: 142 36% 10%;
+            --pc: 0 0% 100%;
+            --s: 142 30% 35%;
+            --sc: 0 0% 100%;
+            --a: 84 60% 45%;
+            --ac: 0 0% 10%;
+            --n: 220 13% 18%;
+            --nc: 0 0% 100%;
+            --b1: 120 8% 96%;
+            --b2: 120 6% 91%;
+            --b3: 120 5% 85%;
+            --bc: 220 13% 14%;
+            --in: 198 93% 60%;
+            --su: 142 72% 46%;
+            --wa: 35 92% 51%;
+            --er: 0 86% 62%;
+        }
+    </style>
+
+    {% block stylesheets %}{% endblock %}
+</head>
+<body class="bg-base-200 min-h-screen">
+
+{# ── Navbar ── #}
+<div class="navbar bg-[#1a2e1a] text-white shadow-md px-4 lg:px-8">
+    <div class="navbar-start">
+        <a href="{{ path('plant_index') }}" class="flex items-center gap-2 text-white hover:opacity-80 transition-opacity">
+            <span class="text-xl">🌱</span>
+            <span class="font-bold text-lg tracking-tight">Flowerchino</span>
+        </a>
+    </div>
+    <div class="navbar-center hidden md:flex">
+        <ul class="menu menu-horizontal gap-1 text-sm">
+            <li><a href="{{ path('plant_index') }}" class="text-white/80 hover:text-white hover:bg-white/10 rounded-lg">Plants</a></li>
+            <li><a href="{{ path('plant_request') }}" class="text-white/80 hover:text-white hover:bg-white/10 rounded-lg">Request</a></li>
+        </ul>
+    </div>
+    <div class="navbar-end">
+        <a href="{{ path('plant_request') }}" class="btn btn-sm bg-white/15 hover:bg-white/25 text-white border-0">
+            + Request Plant
+        </a>
+    </div>
+</div>
+
+{# ── Content ── #}
+<main class="max-w-6xl mx-auto px-4 py-8">
+    {% block body %}{% endblock %}
+</main>
+
+{% block javascripts %}
+    {% block importmap %}{{ importmap('app') }}{% endblock %}
+{% endblock %}
+
+</body>
 </html>
