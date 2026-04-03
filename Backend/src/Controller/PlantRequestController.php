@@ -77,6 +77,8 @@ class PlantRequestController extends AbstractController
         $plant = $plants->find($id);
 
         return new StreamedResponse(function () use ($plant, $fillService) {
+            set_time_limit(120);
+
             if (!$plant || $plant->getQualityGrade() !== 'pending') {
                 $this->sse('done', ['slug' => $plant?->getSlug() ?? '']);
                 return;
