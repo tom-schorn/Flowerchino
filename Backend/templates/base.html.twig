@@ -14,7 +14,8 @@
             theme: {
                 extend: {
                     colors: {
-                        forest: { DEFAULT: '#1a2e1a', light: '#2d4a2d', muted: '#9abf9a' }
+                        espresso:   { DEFAULT: '#3d2314', light: '#5c3520', muted: '#a07850' },
+                        cappuccino: { DEFAULT: '#c4a882', light: '#e8d5b8', cream: '#f5efe6' },
                     }
                 }
             }
@@ -24,24 +25,32 @@
     {# DaisyUI custom theme #}
     <style>
         [data-theme="flowerchino"] {
-            --p: 142 36% 14%;   /* primary = forest green */
-            --pf: 142 36% 10%;
+            /* Cappuccino palette */
+            --p: 25 35% 28%;        /* primary = dark espresso brown */
+            --pf: 25 35% 22%;
             --pc: 0 0% 100%;
-            --s: 142 30% 35%;
+            --s: 30 30% 45%;        /* secondary = warm caramel */
             --sc: 0 0% 100%;
-            --a: 84 60% 45%;
-            --ac: 0 0% 10%;
-            --n: 220 13% 18%;
+            --a: 142 28% 35%;       /* accent = muted sage green */
+            --ac: 0 0% 100%;
+            --n: 25 20% 20%;
             --nc: 0 0% 100%;
-            --b1: 120 8% 96%;
-            --b2: 120 6% 91%;
-            --b3: 120 5% 85%;
-            --bc: 220 13% 14%;
-            --in: 198 93% 60%;
-            --su: 142 72% 46%;
+            --b1: 30 25% 97%;       /* base = warm cream */
+            --b2: 30 20% 92%;       /* slightly darker cream */
+            --b3: 30 15% 85%;       /* card borders */
+            --bc: 25 25% 18%;       /* text = dark espresso */
+            --in: 198 80% 50%;
+            --su: 142 50% 40%;
             --wa: 35 92% 51%;
-            --er: 0 86% 62%;
+            --er: 0 72% 55%;
         }
+
+        body { background-color: #f5efe6; }
+
+        /* Scrollbar subtle */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f0e6d8; }
+        ::-webkit-scrollbar-thumb { background: #c4a882; border-radius: 3px; }
     </style>
 
     {% block stylesheets %}{% endblock %}
@@ -49,7 +58,7 @@
 <body class="bg-base-200 min-h-screen">
 
 {# ── Navbar ── #}
-<div class="navbar bg-[#1a2e1a] text-white shadow-md px-4 lg:px-8">
+<div class="navbar bg-[#3d2314] text-white shadow-md px-4 lg:px-8">
     <div class="navbar-start">
         <a href="{{ path('plant_index') }}" class="flex items-center gap-2 text-white hover:opacity-80 transition-opacity">
             <span class="text-xl">🌱</span>

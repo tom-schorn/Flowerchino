@@ -6,7 +6,7 @@
 
 {# ── Header ── #}
 <div class="mb-8">
-    <h1 class="text-3xl font-bold text-[#1a2e1a]">Plant Database</h1>
+    <h1 class="text-3xl font-bold text-[#3d2314]">Plant Database</h1>
     <p class="text-base-content/60 mt-1">{{ total }} plant{{ total != 1 ? 's' : '' }} in the database</p>
 </div>
 
@@ -15,8 +15,8 @@
     <div class="join w-full max-w-lg">
         <input type="text" name="q" value="{{ q }}"
                placeholder="Search by name, genus, family…"
-               class="input input-bordered join-item flex-1 focus:outline-none focus:border-[#1a2e1a]">
-        <button type="submit" class="btn join-item bg-[#1a2e1a] hover:bg-[#2d4a2d] text-white border-0">
+               class="input input-bordered join-item flex-1 focus:outline-none focus:border-[#3d2314]">
+        <button type="submit" class="btn join-item bg-[#3d2314] hover:bg-[#5c3520] text-white border-0">
             Search
         </button>
         {% if q %}
@@ -33,7 +33,7 @@
             <p class="text-5xl mb-4">🔍</p>
             <h2 class="text-xl font-bold mb-2">No results for "{{ q }}"</h2>
             <p class="text-base-content/60 mb-6">This plant isn't in our database yet.</p>
-            <a href="{{ path('plant_request') }}?q={{ q|url_encode }}" class="btn bg-[#1a2e1a] text-white border-0 hover:bg-[#2d4a2d]">
+            <a href="{{ path('plant_request') }}?q={{ q|url_encode }}" class="btn bg-[#3d2314] text-white border-0 hover:bg-[#5c3520]">
                 Request this plant →
             </a>
         </div>
@@ -49,12 +49,12 @@
         <div class="card-body p-4">
 
             {# Name #}
-            <h2 class="card-title text-sm font-bold italic text-[#1a2e1a] leading-tight">
+            <h2 class="card-title text-sm font-bold italic text-[#3d2314] leading-tight">
                 {{ plant.canonicalName }}
             </h2>
 
             {# Common name #}
-            {% set en = plant.commonNames|filter(c => c.lang == 'en')|first %}
+            {% set en = (plant.commonNames ?? [])|filter(c => c.lang == 'en')|first %}
             {% if en %}
             <p class="text-xs text-base-content/60 -mt-1">{{ en.name }}</p>
             {% endif %}
@@ -107,7 +107,7 @@
 
         {% for p in max(1, page - 2)..min(total_pages, page + 2) %}
         <a href="{{ path('plant_index', {page: p, q: q}) }}"
-           class="join-item btn btn-sm {{ p == page ? 'bg-[#1a2e1a] text-white border-0' : '' }}">
+           class="join-item btn btn-sm {{ p == page ? 'bg-[#3d2314] text-white border-0' : '' }}">
             {{ p }}
         </a>
         {% endfor %}
@@ -129,7 +129,7 @@
             <p class="text-5xl mb-4">🌱</p>
             <h2 class="text-xl font-bold mb-2">No plants yet</h2>
             <p class="text-base-content/60 mb-6">Be the first to request a plant.</p>
-            <a href="{{ path('plant_request') }}" class="btn bg-[#1a2e1a] text-white border-0 hover:bg-[#2d4a2d]">
+            <a href="{{ path('plant_request') }}" class="btn bg-[#3d2314] text-white border-0 hover:bg-[#5c3520]">
                 Request a plant →
             </a>
         </div>

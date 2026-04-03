@@ -88,6 +88,9 @@ class Plant
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private \DateTimeInterface $createdAt;
 
+    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    private \DateTimeInterface $updatedAt;
+
     // Growth characteristics
     #[ORM\Column(nullable: true)]
     private ?bool $multiHarvest = null;
@@ -115,6 +118,7 @@ class Plant
         $this->stageParams = new ArrayCollection();
         $this->growSystemCompatibilities = new ArrayCollection();
         $this->createdAt = new \DateTime();
+        $this->updatedAt = new \DateTime();
     }
 
     public function getId(): ?int { return $this->id; }
@@ -186,6 +190,10 @@ class Plant
     public function setLastReviewedAt(?\DateTimeInterface $lastReviewedAt): static { $this->lastReviewedAt = $lastReviewedAt; return $this; }
 
     public function getCreatedAt(): \DateTimeInterface { return $this->createdAt; }
+
+    public function getUpdatedAt(): \DateTimeInterface { return $this->updatedAt; }
+    public function setUpdatedAt(\DateTimeInterface $updatedAt): static { $this->updatedAt = $updatedAt; return $this; }
+    public function touch(): static { $this->updatedAt = new \DateTime(); return $this; }
 
     public function isMultiHarvest(): ?bool { return $this->multiHarvest; }
     public function setMultiHarvest(?bool $multiHarvest): static { $this->multiHarvest = $multiHarvest; return $this; }

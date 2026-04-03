@@ -208,6 +208,7 @@ class PlantApiController extends AbstractController
                 'last_reviewed_at'   => $plant->getLastReviewedAt()?->format(\DateTimeInterface::ATOM),
             ],
             'created_at'          => $plant->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            'updated_at'          => $plant->getUpdatedAt()->format(\DateTimeInterface::ATOM),
         ];
     }
 

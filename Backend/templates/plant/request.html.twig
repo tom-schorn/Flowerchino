@@ -6,7 +6,7 @@
 
 <div class="max-w-xl mx-auto">
     <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-[#1a2e1a]">Request a Plant</h1>
+        <h1 class="text-3xl font-bold text-[#3d2314]">Request a Plant</h1>
         <p class="text-base-content/60 mt-2">
             Search for any species. If it's not in our database yet, Claude will generate the growing parameters.
         </p>
@@ -17,7 +17,7 @@
         <input type="text" id="searchInput"
                placeholder="e.g. Solanum lycopersicum, Basil, Cannabis sativa…"
                autocomplete="off" spellcheck="false"
-               class="input input-bordered w-full text-base focus:outline-none focus:border-[#1a2e1a]">
+               class="input input-bordered w-full text-base focus:outline-none focus:border-[#3d2314]">
 
         {# Suggestions dropdown #}
         <div id="suggestions"
@@ -32,7 +32,7 @@
             <div class="card-body p-4">
                 <div class="flex items-start justify-between gap-3">
                     <div>
-                        <p class="font-bold italic text-[#1a2e1a]" id="confirmName"></p>
+                        <p class="font-bold italic text-[#3d2314]" id="confirmName"></p>
                         <p class="text-sm text-base-content/60 mt-0.5" id="confirmMeta"></p>
                     </div>
                     <button onclick="clearSelection()" class="btn btn-ghost btn-xs">✕</button>
@@ -40,7 +40,7 @@
                 <form method="POST" action="{{ path('plant_request_submit') }}" class="mt-3">
                     <input type="hidden" name="gbif_key" id="hiddenGbifKey">
                     <input type="hidden" name="canonical_name" id="hiddenName">
-                    <button type="submit" class="btn w-full bg-[#1a2e1a] hover:bg-[#2d4a2d] text-white border-0">
+                    <button type="submit" class="btn w-full bg-[#3d2314] hover:bg-[#5c3520] text-white border-0">
                         Generate growing parameters →
                     </button>
                 </form>
@@ -99,7 +99,7 @@ function renderSuggestions(items) {
              data-family="${esc(item.family ?? '')}"
              data-rank="${esc(item.rank ?? '')}"
              class="px-4 py-3 cursor-pointer hover:bg-base-200 border-b border-base-200 last:border-0 transition-colors">
-            <div class="font-semibold italic text-sm text-[#1a2e1a]">${esc(item.canonical_name)}</div>
+            <div class="font-semibold italic text-sm text-[#3d2314]">${esc(item.canonical_name)}</div>
             <div class="text-xs text-base-content/50 mt-0.5">${[item.family, item.rank].filter(Boolean).join(' · ')}</div>
         </div>
     `).join('');

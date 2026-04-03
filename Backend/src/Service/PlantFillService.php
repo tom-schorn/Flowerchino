@@ -96,6 +96,7 @@ class PlantFillService
         $plant->setQualityGrade('draft');
         $plant->setAiPrefilled(true);
         $plant->setCompletenessScore($this->calcCompleteness($plant));
+        $plant->touch();
         $this->em->flush();
 
         return true;
