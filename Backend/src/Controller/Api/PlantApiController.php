@@ -5,16 +5,118 @@ namespace App\Controller\Api;
 use App\Entity\Plant;
 use App\Entity\StageParams;
 use App\Repository\PlantRepository;
+use App\Service\PlantFillService;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\String\Slugger\AsciiSlugger;
 
 #[Route('/v1/plants', name: 'api_plants_')]
 class PlantApiController extends AbstractController
 {
     private const PER_PAGE_MAX = 100;
     private const PER_PAGE_DEFAULT = 20;
+
+    // ── Suggest (autocomplete) ────────────────────────────────────────────
+
+    #[Route('/suggest', name: 'suggest', methods: ['GET'])]
+    public function suggest(Request $request, PlantRepository $plants): JsonResponse
+    {
+        $q = trim((string) $request->query->get('q', ''));
+        if (strlen($q) < 2) {
+            return $this->envelope([]);
+        }
+
+        // Own DB first
+        $dbResult = $plants->search($q, 1, 5);
+        $inDb     = [];
+        $suggestions = array_map(function (Plant $p) use (&$inDb) {
+            $inDb[$p->getGbifKey()] = true;
+            return [
+                'gbif_key'       => $p->getGbifKey(),
+                'canonical_name' => $p->getCanonicalName(),
+                'family'         => $p->getFamily(),
+                'rank'           => $p->getRank(),
+                'in_flowerchino' => true,
+                'plant_id'       => $p->getId(),
+                'slug'           => $p->getSlug(),
+                'quality_grade'  => $p->getQualityGrade(),
+            ];
+        }, $dbResult['items']);
+
+        // Supplement from GBIF
+        $url  = 'https://api.gbif.org/v1/species/suggest?' . http_build_query([
+            'q' => $q, 'rank' => 'SPECIES', 'kingdom' => 'Plantae', 'limit' => 10,
+        ]);
+        $body = @file_get_contents($url, false, stream_context_create(['http' => ['timeout' => 5]]));
+
+        if ($body) {
+            foreach (json_decode($body, true) ?? [] as $r) {
+                if (!isset($r['key'], $r['canonicalName'])) continue;
+                if (isset($inDb[$r['key']])) continue;
+                $suggestions[] = [
+                    'gbif_key'       => $r['key'],
+                    'canonical_name' => $r['canonicalName'],
+                    'family'         => $r['family'] ?? null,
+                    'rank'           => $r['rank'] ?? null,
+                    'in_flowerchino' => false,
+                    'plant_id'       => null,
+                    'slug'           => null,
+                    'quality_grade'  => null,
+                ];
+            }
+        }
+
+        return $this->envelope(array_slice($suggestions, 0, 10));
+    }
+
+    // ── Request AI generation ─────────────────────────────────────────────
+
+    #[Route('/request', name: 'request', methods: ['POST'])]
+    public function request(
+        Request $request,
+        PlantRepository $plants,
+        EntityManagerInterface $em,
+        PlantFillService $fillService,
+    ): JsonResponse {
+        $data          = json_decode($request->getContent(), true) ?? [];
+        $gbifKey       = isset($data['gbif_key']) ? (int) $data['gbif_key'] : 0;
+        $canonicalName = trim((string) ($data['canonical_name'] ?? ''));
+
+        if (!$gbifKey) {
+            return $this->error('Field "gbif_key" is required.', 422);
+        }
+
+        // Already exists → return immediately
+        $existing = $plants->findByGbifKey($gbifKey);
+        if ($existing) {
+            return $this->envelope($this->serializePlant($existing));
+        }
+
+        if (!$canonicalName) {
+            return $this->error('Field "canonical_name" is required for new plants.', 422);
+        }
+
+        // Create stub
+        $slug  = (new AsciiSlugger())->slug(strtolower($canonicalName))->toString();
+        $plant = new Plant();
+        $plant->setCanonicalName($canonicalName);
+        $plant->setScientificName($canonicalName);
+        $plant->setSlug($slug);
+        $plant->setGbifKey($gbifKey);
+        $plant->setQualityGrade('pending');
+        $plant->setAiPrefilled(false);
+        $em->persist($plant);
+        $em->flush();
+
+        // Run fill synchronously — caller should use a 90s HTTP timeout
+        set_time_limit(120);
+        $fillService->fill($plant);
+
+        return $this->envelope($this->serializePlant($plant), status: 201);
+    }
 
     // ── List & search ────────────────────────────────────────────────────
 

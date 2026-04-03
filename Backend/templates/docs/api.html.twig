@@ -1,0 +1,276 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}API Reference — Flowerchino{% endblock %}
+
+{% block body %}
+
+<div class="max-w-4xl mx-auto">
+
+    {# Header #}
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-primary">API Reference</h1>
+        <p class="text-base-content/60 mt-2">
+            Public REST API · Base URL: <code class="bg-base-300 px-2 py-0.5 rounded text-sm">https://flowerchino.com/v1</code>
+        </p>
+    </div>
+
+    {# Intro #}
+    <div class="card bg-base-100 shadow-sm mb-6">
+        <div class="card-body p-5 space-y-3 text-sm text-base-content/80">
+            <p>All responses use a consistent envelope:</p>
+            <pre class="bg-base-200 rounded-lg p-4 text-xs overflow-x-auto">{{ '{ "status": "success", "data": {}, "error": null, "meta": {} }' }}</pre>
+            <ul class="list-disc list-inside space-y-1 text-base-content/60">
+                <li>Dates are ISO 8601 (<code class="bg-base-300 px-1 rounded">2026-04-03T12:00:00+00:00</code>)</li>
+                <li>Missing parameters return <code class="bg-base-300 px-1 rounded">null</code> — never omitted</li>
+                <li>Lists include <code class="bg-base-300 px-1 rounded">meta.total</code>, <code class="bg-base-300 px-1 rounded">meta.per_page</code>, <code class="bg-base-300 px-1 rounded">meta.current_page</code></li>
+            </ul>
+        </div>
+    </div>
+
+    {# ── Section: Autocomplete ── #}
+    {% include 'docs/_section.html.twig' with { title: 'Autocomplete' } %}
+
+    {% include 'docs/_endpoint.html.twig' with {
+        method: 'GET', path: '/v1/plants/suggest',
+        summary: 'Plant name autocomplete',
+        description: 'Search by common or Latin name. Returns Flowerchino plants first (with full data), then GBIF results not yet in the database. Use the in_flowerchino flag to decide whether data is immediately available.',
+        params: [
+            { name: 'q', type: 'string', required: true,  desc: 'Search query, min. 2 characters' },
+        ],
+        example_request: 'GET /v1/plants/suggest?q=tomato',
+        example_response: '{
+  "status": "success",
+  "data": [
+    {
+      "gbif_key": 2874515,
+      "canonical_name": "Solanum lycopersicum",
+      "family": "Solanaceae",
+      "rank": "SPECIES",
+      "in_flowerchino": true,
+      "plant_id": 1,
+      "slug": "solanum-lycopersicum",
+      "quality_grade": "draft"
+    },
+    {
+      "gbif_key": 8364889,
+      "canonical_name": "Solanum pimpinellifolium",
+      "family": "Solanaceae",
+      "rank": "SPECIES",
+      "in_flowerchino": false,
+      "plant_id": null,
+      "slug": null,
+      "quality_grade": null
+    }
+  ],
+  "error": null
+}'
+    } %}
+
+    {# ── Section: Plants ── #}
+    {% include 'docs/_section.html.twig' with { title: 'Plants' } %}
+
+    {% include 'docs/_endpoint.html.twig' with {
+        method: 'GET', path: '/v1/plants',
+        summary: 'List all plants',
+        params: [
+            { name: 'page',     type: 'int',    required: false, desc: 'Page number (default: 1)' },
+            { name: 'per_page', type: 'int',    required: false, desc: 'Results per page, max 100 (default: 20)' },
+        ],
+        example_request: 'GET /v1/plants?page=1&per_page=20',
+        example_response: '{
+  "status": "success",
+  "data": [ { "id": 1, "canonical_name": "Solanum lycopersicum", "slug": "solanum-lycopersicum", ... } ],
+  "meta": { "total": 42, "per_page": 20, "current_page": 1, "total_pages": 3 },
+  "error": null
+}'
+    } %}
+
+    {% include 'docs/_endpoint.html.twig' with {
+        method: 'GET', path: '/v1/plants/search',
+        summary: 'Full-text search',
+        params: [
+            { name: 'q',        type: 'string', required: true,  desc: 'Search query' },
+            { name: 'page',     type: 'int',    required: false, desc: 'Page number' },
+            { name: 'per_page', type: 'int',    required: false, desc: 'Results per page' },
+        ],
+        example_request: 'GET /v1/plants/search?q=basil',
+        example_response: '{ "status": "success", "data": [ ... ], "meta": { "query": "basil", ... }, "error": null }'
+    } %}
+
+    {% include 'docs/_endpoint.html.twig' with {
+        method: 'GET', path: '/v1/plants/{id}',
+        summary: 'Get plant by ID',
+        params: [
+            { name: 'id', type: 'int', required: true, desc: 'Flowerchino plant ID' },
+        ],
+        example_request: 'GET /v1/plants/1',
+        example_response: '{
+  "status": "success",
+  "data": {
+    "id": 1,
+    "canonical_name": "Solanum lycopersicum",
+    "scientific_name": "Solanum lycopersicum L.",
+    "slug": "solanum-lycopersicum",
+    "common_names": [ { "name": "Tomato", "lang": "en" } ],
+    "taxonomy": { "family": "Solanaceae", "genus": "Solanum", ... },
+    "identifiers": { "gbif_key": 2874515, "ipni_id": null },
+    "growth": { "cycle_days_min": 60, "cycle_days_max": 85, "multi_harvest": true, ... },
+    "quality": { "grade": "draft", "completeness_score": 78, ... },
+    "updated_at": "2026-04-03T12:00:00+00:00"
+  },
+  "error": null
+}'
+    } %}
+
+    {% include 'docs/_endpoint.html.twig' with {
+        method: 'GET', path: '/v1/plants/by-gbif/{gbif_key}',
+        summary: 'Lookup by GBIF key',
+        description: 'Recommended integration point for Florabase and other apps. Returns 404 if the plant is not yet in the database.',
+        params: [
+            { name: 'gbif_key', type: 'int', required: true, desc: 'GBIF backbone taxon key' },
+        ],
+        example_request: 'GET /v1/plants/by-gbif/2874515',
+        example_response: '{ "status": "success", "data": { ... }, "error": null }'
+    } %}
+
+    {% include 'docs/_endpoint.html.twig' with {
+        method: 'GET', path: '/v1/plants/by-slug/{slug}',
+        summary: 'Lookup by URL slug',
+        params: [
+            { name: 'slug', type: 'string', required: true, desc: 'e.g. solanum-lycopersicum' },
+        ],
+        example_request: 'GET /v1/plants/by-slug/solanum-lycopersicum',
+        example_response: '{ "status": "success", "data": { ... }, "error": null }'
+    } %}
+
+    {% include 'docs/_endpoint.html.twig' with {
+        method: 'GET', path: '/v1/plants/by-ipni/{ipni_id}',
+        summary: 'Lookup by IPNI identifier',
+        params: [
+            { name: 'ipni_id', type: 'string', required: true, desc: 'e.g. 320035-2' },
+        ],
+        example_request: 'GET /v1/plants/by-ipni/320035-2',
+        example_response: '{ "status": "success", "data": { ... }, "error": null }'
+    } %}
+
+    {# ── Section: Stage Parameters ── #}
+    {% include 'docs/_section.html.twig' with { title: 'Stage Parameters' } %}
+
+    {% include 'docs/_endpoint.html.twig' with {
+        method: 'GET', path: '/v1/plants/{id}/params',
+        summary: 'Get growing parameters',
+        description: 'Returns all stage/medium combinations. Filter by stage or grow system. Threshold fields always have the same structure: optimal → warning → critical → lethal_after_hours.',
+        params: [
+            { name: 'stage',  type: 'string', required: false, desc: 'germinating · seedling · vegetative · flowering · fruiting · harvesting' },
+            { name: 'system', type: 'string', required: false, desc: 'grow system slug, e.g. hydroponic · soil · dwc' },
+        ],
+        example_request: 'GET /v1/plants/1/params?stage=vegetative&system=hydroponic',
+        example_response: '{
+  "status": "success",
+  "data": [{
+    "stage": "vegetative",
+    "grow_system": { "slug": "hydroponic", "name": "Hydroponic", "type": "hydroponic" },
+    "water": {
+      "ph": {
+        "optimal": { "min": 5.8, "max": 6.2 },
+        "warning": { "min": 5.5, "max": 6.5 },
+        "critical": { "min": 5.0, "max": 7.0 },
+        "lethal_after_hours": 48
+      },
+      "ec_ms_cm": { "optimal": { "min": 1.8, "max": 2.5 }, ... },
+      "nutrients_ppm": { "n": 180, "p": 50, "k": 200, "ca": 150, "mg": 50, "s": 60 }
+    },
+    "environment": {
+      "air_temp_c": { "optimal": { "min": 20, "max": 26 }, ... },
+      "humidity_pct": { "optimal": { "min": 50, "max": 70 }, ... }
+    },
+    "light": {
+      "ppfd_umol": { "min": 400, "max": 600 },
+      "photoperiod_hours": 18
+    }
+  }],
+  "error": null
+}'
+    } %}
+
+    {# ── Section: Request Generation ── #}
+    {% include 'docs/_section.html.twig' with { title: 'Request AI Generation' } %}
+
+    {% include 'docs/_endpoint.html.twig' with {
+        method: 'POST', path: '/v1/plants/request',
+        summary: 'Request a new plant',
+        description: 'If the plant already exists, it is returned immediately (200). Otherwise the AI generation runs synchronously and returns when complete (201). Use a 90 second HTTP timeout. The canonical_name is required only for new plants.',
+        params: [
+            { name: 'gbif_key',       type: 'int',    required: true,  desc: 'GBIF backbone taxon key' },
+            { name: 'canonical_name', type: 'string', required: false, desc: 'Latin name, required if plant is not yet in database' },
+        ],
+        example_request: 'POST /v1/plants/request
+Content-Type: application/json
+
+{ "gbif_key": 2874515, "canonical_name": "Solanum lycopersicum" }',
+        example_response: '{
+  "status": "success",
+  "data": {
+    "id": 1,
+    "canonical_name": "Solanum lycopersicum",
+    "quality": { "grade": "draft", "completeness_score": 78 },
+    "updated_at": "2026-04-03T12:00:00+00:00",
+    ...
+  },
+  "error": null
+}
+HTTP 201 Created  (new plant)
+HTTP 200 OK       (already existed)'
+    } %}
+
+    {% include 'docs/_endpoint.html.twig' with {
+        method: 'GET', path: '/v1/plants/{id}/status',
+        summary: 'Check generation status',
+        description: 'Poll this while quality_grade is "pending".',
+        params: [
+            { name: 'id', type: 'int', required: true, desc: 'Plant ID' },
+        ],
+        example_request: 'GET /v1/plants/1/status',
+        example_response: '{
+  "status": "success",
+  "data": {
+    "id": 1,
+    "quality_grade": "draft",
+    "completeness_score": 78,
+    "ai_prefilled": true,
+    "last_reviewed_at": null
+  },
+  "error": null
+}'
+    } %}
+
+    {# ── Section: Data Quality ── #}
+    {% include 'docs/_section.html.twig' with { title: 'Data Quality' } %}
+
+    <div class="card bg-base-100 shadow-sm mb-6">
+        <div class="card-body p-5">
+            <div class="overflow-x-auto">
+                <table class="table table-sm w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-base-200">
+                            <th class="text-base-content/50 font-semibold">Grade</th>
+                            <th class="text-base-content/50 font-semibold">Meaning</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-base-200"><td><span class="badge badge-warning">pending</span></td><td class="text-base-content/70">AI generation in progress</td></tr>
+                        <tr class="border-b border-base-200"><td><span class="badge badge-info">draft</span></td><td class="text-base-content/70">AI pre-filled, not yet reviewed by community</td></tr>
+                        <tr class="border-b border-base-200"><td><span class="badge badge-success">community</span></td><td class="text-base-content/70">Confirmed by ≥ 2 trusted contributors</td></tr>
+                        <tr><td><span class="badge badge-success">verified</span></td><td class="text-base-content/70">Confirmed by a curator or domain expert</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-xs text-base-content/50 mt-3">
+                The <code class="bg-base-300 px-1 rounded">completeness_score</code> (0–100) reflects how many parameters are filled in.
+                Check <code class="bg-base-300 px-1 rounded">updated_at</code> to detect when Flowerchino has newer data than your local cache.
+            </p>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

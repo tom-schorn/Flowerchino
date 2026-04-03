@@ -1,0 +1,77 @@
+{% set methodColor = {
+    'GET':    'badge-success',
+    'POST':   'badge-info',
+    'PUT':    'badge-warning',
+    'PATCH':  'badge-warning',
+    'DELETE': 'badge-error',
+} %}
+
+<div class="card bg-base-100 shadow-sm mb-4">
+    <div class="card-body p-0">
+
+        {# Header #}
+        <div class="flex items-center gap-3 p-4 border-b border-base-200">
+            <span class="badge {{ methodColor[method] ?? 'badge-ghost' }} badge-md font-mono font-bold">{{ method }}</span>
+            <code class="text-sm font-semibold text-primary">{{ path }}</code>
+            <span class="text-sm text-base-content/60 ml-1">{{ summary }}</span>
+        </div>
+
+        <div class="p-4 space-y-4">
+
+            {% if description is defined and description %}
+            <p class="text-sm text-base-content/70">{{ description }}</p>
+            {% endif %}
+
+            {# Params table #}
+            {% if params is defined and params|length > 0 %}
+            <div>
+                <p class="text-xs font-bold uppercase tracking-widest text-base-content/40 mb-2">Parameters</p>
+                <div class="overflow-x-auto">
+                    <table class="table table-xs w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-base-200">
+                                <th class="text-base-content/50 font-semibold">Name</th>
+                                <th class="text-base-content/50 font-semibold">Type</th>
+                                <th class="text-base-content/50 font-semibold">Required</th>
+                                <th class="text-base-content/50 font-semibold">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in params %}
+                            <tr class="border-b border-base-200/50 last:border-0">
+                                <td><code class="bg-base-200 px-1.5 py-0.5 rounded text-xs">{{ p.name }}</code></td>
+                                <td class="text-base-content/50 text-xs">{{ p.type }}</td>
+                                <td>
+                                    {% if p.required %}
+                                    <span class="badge badge-error badge-xs">required</span>
+                                    {% else %}
+                                    <span class="badge badge-ghost badge-xs">optional</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-base-content/70 text-xs">{{ p.desc }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            {# Example #}
+            {% if example_request is defined %}
+            <div>
+                <p class="text-xs font-bold uppercase tracking-widest text-base-content/40 mb-2">Example</p>
+                <pre class="bg-base-200 rounded-lg p-3 text-xs overflow-x-auto text-base-content/80">{{ example_request }}</pre>
+            </div>
+            {% endif %}
+
+            {% if example_response is defined %}
+            <div>
+                <p class="text-xs font-bold uppercase tracking-widest text-base-content/40 mb-2">Response</p>
+                <pre class="bg-neutral text-neutral-content rounded-lg p-3 text-xs overflow-x-auto">{{ example_response }}</pre>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
