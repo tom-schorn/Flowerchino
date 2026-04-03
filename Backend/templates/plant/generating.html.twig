@@ -78,6 +78,8 @@ const es  = new EventSource('/plants/generating/{{ plant.id }}/stream');
 const bar = document.getElementById('progressBar');
 const lbl = document.getElementById('currentLabel');
 
+es.addEventListener('ping', () => {}); // Verbindungsbestätigung
+
 es.addEventListener('progress', e => {
     const d = JSON.parse(e.data);
 

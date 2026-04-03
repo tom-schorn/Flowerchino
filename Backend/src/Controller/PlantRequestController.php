@@ -79,6 +79,14 @@ class PlantRequestController extends AbstractController
         return new StreamedResponse(function () use ($plant, $fillService) {
             set_time_limit(120);
 
+            // Alle Output-Buffer leeren damit SSE-Events sofort raus gehen
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+
+            // Initiales Ping damit der Browser weiß dass die Verbindung steht
+            $this->sse('ping', []);
+
             if (!$plant || $plant->getQualityGrade() !== 'pending') {
                 $this->sse('done', ['slug' => $plant?->getSlug() ?? '']);
                 return;
@@ -105,7 +113,9 @@ class PlantRequestController extends AbstractController
     {
         echo "event: {$event}\n";
         echo 'data: ' . json_encode($data) . "\n\n";
-        ob_flush();
+        if (ob_get_level() > 0) {
+            ob_flush();
+        }
         flush();
     }
 
