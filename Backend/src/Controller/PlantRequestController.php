@@ -54,10 +54,13 @@ class PlantRequestController extends AbstractController
         $em->persist($plant);
         $em->flush();
 
-        // Dispatch AI fill job
+        // Dispatch AI fill job (sync transport — runs immediately in this request)
         $bus->dispatch(new FillPlantMessage($plant->getId(), $gbifKey, $canonicalName));
 
-        return $this->redirectToRoute('plant_pending', ['id' => $plant->getId()]);
+        // Reload from DB to get updated slug/grade after sync handler ran
+        $em->refresh($plant);
+
+        return $this->redirectToRoute('plant_detail', ['slug' => $plant->getSlug()]);
     }
 
     #[Route('/plants/pending/{id}', name: 'plant_pending', requirements: ['id' => '\d+'])]

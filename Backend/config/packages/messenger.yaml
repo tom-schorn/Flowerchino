@@ -22,4 +22,4 @@ framework:
             Symfony\Component\Notifier\Message\ChatMessage: async
             Symfony\Component\Notifier\Message\SmsMessage: async
 
-            App\Message\FillPlantMessage: async
+            App\Message\FillPlantMessage: sync
