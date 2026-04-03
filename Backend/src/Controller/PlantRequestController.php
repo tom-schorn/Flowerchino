@@ -3,14 +3,14 @@
 namespace App\Controller;
 
 use App\Entity\Plant;
-use App\Message\FillPlantMessage;
 use App\Repository\PlantRepository;
+use App\Service\PlantFillService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\String\Slugger\AsciiSlugger;
 
@@ -27,7 +27,6 @@ class PlantRequestController extends AbstractController
         Request $request,
         PlantRepository $plants,
         EntityManagerInterface $em,
-        MessageBusInterface $bus,
     ): Response {
         $gbifKey       = (int) $request->request->get('gbif_key');
         $canonicalName = trim((string) $request->request->get('canonical_name'));
@@ -54,29 +53,58 @@ class PlantRequestController extends AbstractController
         $em->persist($plant);
         $em->flush();
 
-        // Dispatch AI fill job (sync transport — runs immediately in this request)
-        $bus->dispatch(new FillPlantMessage($plant->getId(), $gbifKey, $canonicalName));
-
-        // Reload from DB to get updated slug/grade after sync handler ran
-        $em->refresh($plant);
-
-        return $this->redirectToRoute('plant_detail', ['slug' => $plant->getSlug()]);
+        return $this->redirectToRoute('plant_generating', ['id' => $plant->getId()]);
     }
 
-    #[Route('/plants/pending/{id}', name: 'plant_pending', requirements: ['id' => '\d+'])]
-    public function pending(int $id, PlantRepository $plants): Response
+    #[Route('/plants/generating/{id}', name: 'plant_generating', requirements: ['id' => '\d+'])]
+    public function generating(int $id, PlantRepository $plants): Response
     {
         $plant = $plants->find($id);
         if (!$plant) {
             throw $this->createNotFoundException("Plant #$id not found");
         }
 
-        // Already done → redirect to detail
         if ($plant->getQualityGrade() !== 'pending') {
             return $this->redirectToRoute('plant_detail', ['slug' => $plant->getSlug()]);
         }
 
-        return $this->render('plant/pending.html.twig', ['plant' => $plant]);
+        return $this->render('plant/generating.html.twig', ['plant' => $plant]);
+    }
+
+    #[Route('/plants/generating/{id}/stream', name: 'plant_generating_stream', requirements: ['id' => '\d+'])]
+    public function sseStream(int $id, PlantRepository $plants, PlantFillService $fillService): StreamedResponse
+    {
+        $plant = $plants->find($id);
+
+        return new StreamedResponse(function () use ($plant, $fillService) {
+            if (!$plant || $plant->getQualityGrade() !== 'pending') {
+                $this->sse('done', ['slug' => $plant?->getSlug() ?? '']);
+                return;
+            }
+
+            $fillService->fill($plant, function (string $step, string $label, int $current, int $total) {
+                $this->sse('progress', [
+                    'step'    => $step,
+                    'label'   => $label,
+                    'current' => $current,
+                    'total'   => $total,
+                ]);
+            });
+
+            $this->sse('done', ['slug' => $plant->getSlug()]);
+        }, 200, [
+            'Content-Type'      => 'text/event-stream',
+            'Cache-Control'     => 'no-cache',
+            'X-Accel-Buffering' => 'no',
+        ]);
+    }
+
+    private function sse(string $event, array $data): void
+    {
+        echo "event: {$event}\n";
+        echo 'data: ' . json_encode($data) . "\n\n";
+        ob_flush();
+        flush();
     }
 
     // GBIF proxy — avoids CORS issues calling GBIF from the browser
