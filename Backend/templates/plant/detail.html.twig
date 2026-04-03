@@ -5,11 +5,11 @@
 {% block body %}
 
 {# ── Header ── #}
-<div class="bg-[#3d2314] text-white rounded-2xl p-6 mb-6">
+<div class="bg-primary text-white rounded-2xl p-6 mb-6">
     <div class="flex items-start justify-between gap-4 flex-wrap">
         <div>
             <h1 class="text-3xl font-bold italic">{{ plant.canonicalName }}</h1>
-            <p class="text-[#c4a882] text-sm mt-1">{{ plant.scientificName }}</p>
+            <p class="text-primary-content/60 text-sm mt-1">{{ plant.scientificName }}</p>
             {% if plant.commonNames %}
             <div class="flex flex-wrap gap-2 mt-3">
                 {% for cn in plant.commonNames %}
@@ -135,7 +135,7 @@
             {# Stage tabs #}
             <div class="flex flex-wrap gap-2 mb-4">
                 {% for stage, sp in stages %}
-                <button class="stage-tab btn btn-sm {% if loop.first %}bg-[#3d2314] text-white border-0{% else %}btn-ghost border border-base-300{% endif %}"
+                <button class="stage-tab btn btn-sm {% if loop.first %}bg-primary text-white border-0{% else %}btn-ghost border border-base-300{% endif %}"
                         onclick="showStage('{{ medium }}', '{{ stage }}', this)">
                     {{ stage|capitalize }}
                     {% if sp.stageDaysMin %}
@@ -271,12 +271,12 @@ function showStage(medium, stage, btn) {
     const panel = document.getElementById('medium-' + medium);
     panel.querySelectorAll('.stage-content').forEach(el => el.classList.add('hidden'));
     panel.querySelectorAll('.stage-tab').forEach(el => {
-        el.className = el.className.replace('bg-[#3d2314] text-white border-0', '').trim();
+        el.className = el.className.replace('bg-primary text-white border-0', '').trim();
         el.classList.add('btn-ghost', 'border', 'border-base-300');
     });
     document.getElementById('stage-' + medium + '-' + stage).classList.remove('hidden');
     btn.classList.remove('btn-ghost', 'border', 'border-base-300');
-    btn.classList.add('bg-[#3d2314]', 'text-white', 'border-0');
+    btn.classList.add('bg-primary', 'text-white', 'border-0');
 }
 </script>
 {% endblock %}
