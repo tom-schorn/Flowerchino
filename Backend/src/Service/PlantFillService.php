@@ -338,16 +338,57 @@ PROMPT;
 
     private function calcCompleteness(Plant $plant): int
     {
-        $filled = 0;
-        $total  = 8;
-        if ($plant->getCanonicalName())                          $filled++;
-        if ($plant->getFamily())                                 $filled++;
-        if ($plant->getGenus())                                  $filled++;
-        if ($plant->getCommonNames())                            $filled++;
-        if ($plant->getCycleDaysMin())                           $filled++;
-        if ($plant->getGbifKey())                                $filled++;
-        if ($plant->getStageParams()->count() >= 6)              $filled++;
-        if ($plant->getGrowSystemCompatibilities()->count() > 0) $filled++;
-        return (int) round($filled / $total * 100);
+        $score = 0;
+
+        // ── Botanik (25 Punkte) ──────────────────────────────────────────
+        if ($plant->getCanonicalName())      $score += 5;
+        if ($plant->getScientificName())     $score += 2;
+        if ($plant->getAuthorship())         $score += 1;
+        if ($plant->getFamily())             $score += 3;
+        if ($plant->getGenus())              $score += 3;
+        if ($plant->getOrder())              $score += 1;
+        if ($plant->getPhylum())             $score += 1;
+        if ($plant->getTaxonomicStatus())    $score += 1;
+        if ($plant->getGbifKey())            $score += 3;
+        if ($plant->getIpniId())             $score += 1;
+        if ($plant->getCommonNames() && count($plant->getCommonNames()) >= 2) $score += 4;
+
+        // ── Wachstum (15 Punkte) ─────────────────────────────────────────
+        if ($plant->getCycleDaysMin())       $score += 4;
+        if ($plant->getYieldPotential())     $score += 3;
+        if ($plant->isMultiHarvest() !== null) $score += 2;
+        if ($plant->isHasDormant() !== null) $score += 2;
+        if ($plant->getGrowSystemCompatibilities()->count() > 0) $score += 4;
+
+        // ── Stage Params (60 Punkte = 5 pro Stage × 6 Stages × 2 Medien) ──
+        // Hydro: 6 Stages × 5 Punkte = 30
+        // Soil:  6 Stages × 5 Punkte = 30
+        $stagesBySystem = [];
+        foreach ($plant->getStageParams() as $sp) {
+            $type = $sp->getGrowSystem()?->getType() ?? 'hydroponic';
+            $stagesBySystem[$type][$sp->getStage()] = $sp;
+        }
+
+        foreach (['hydroponic', 'soil'] as $medium) {
+            foreach (self::STAGES as $stage) {
+                $sp = $stagesBySystem[$medium][$stage] ?? null;
+                if (!$sp) continue;
+
+                $pts = 0;
+                if ($sp->getPhMin())      $pts++;
+                if ($sp->getAirTempMin()) $pts++;
+                if ($sp->getHumidityMin()) $pts++;
+                if ($sp->getPpfdMin())    $pts++;
+                // Hydro-spezifische Felder zählen extra
+                if ($medium === 'hydroponic') {
+                    if ($sp->getEcMin()) $pts++;
+                } else {
+                    if ($sp->getNPpm())  $pts++;
+                }
+                $score += $pts;
+            }
+        }
+
+        return min(100, $score);
     }
 }
