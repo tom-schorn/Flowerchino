@@ -64,11 +64,6 @@
     <p class="text-xs text-base-content/40" id="currentLabel">Starting…</p>
 </div>
 
-<style>
-.step-item.active { background: oklch(var(--b2)); color: oklch(var(--p)); font-weight: 600; }
-.step-item.done   { color: #16a34a; }
-</style>
-
 <script>
 const es  = new EventSource('/plants/generating/{{ plant.id }}/stream');
 const bar = document.getElementById('progressBar');
