@@ -336,6 +336,11 @@ PROMPT;
         return $sp;
     }
 
+    public function updateCompleteness(Plant $plant): void
+    {
+        $plant->setCompletenessScore($this->calcCompleteness($plant));
+    }
+
     private function calcCompleteness(Plant $plant): int
     {
         $score = 0;
