@@ -1,0 +1,188 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Flowerchino — Open Plant Knowledge Platform{% endblock %}
+
+{% block body %}
+
+{# ── Hero ── #}
+<div class="hero min-h-[60vh] rounded-3xl overflow-hidden mb-12"
+     style="background: linear-gradient(135deg, oklch(var(--p)) 0%, oklch(var(--s)) 100%);">
+    <div class="hero-content text-center text-primary-content py-20 px-4">
+        <div class="max-w-2xl">
+            <div class="text-6xl mb-6">🌱</div>
+            <h1 class="text-5xl font-bold leading-tight mb-4">
+                The open plant<br>knowledge platform
+            </h1>
+            <p class="text-primary-content/70 text-lg mb-8 max-w-xl mx-auto">
+                Stage-differentiated growing parameters for hydroponics and soil.
+                Free API. Community-verified data.
+            </p>
+            <div class="flex flex-wrap justify-center gap-3">
+                <a href="{{ path('plant_request') }}" class="btn btn-lg bg-primary-content text-primary hover:bg-primary-content/90 border-0 font-bold">
+                    Request a Plant
+                </a>
+                <a href="{{ path('plant_index') }}" class="btn btn-lg bg-primary-content/15 hover:bg-primary-content/25 text-primary-content border-0">
+                    Browse Database
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── Stats bar ── #}
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+    {% for stat in [
+        { value: plant_count,  label: 'Plants',           icon: '🌿' },
+        { value: 'Free',       label: 'Public API',       icon: '🔓' },
+        { value: '13',         label: 'AI calls per plant', icon: '🤖' },
+        { value: '2 mediums',  label: 'Hydro + Soil',     icon: '💧' },
+    ] %}
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body p-5 text-center">
+            <div class="text-3xl mb-1">{{ stat.icon }}</div>
+            <div class="text-2xl font-bold text-primary">{{ stat.value }}</div>
+            <div class="text-xs text-base-content/50 uppercase tracking-widest">{{ stat.label }}</div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{# ── Feature grid ── #}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body p-6">
+            <div class="text-4xl mb-3">📊</div>
+            <h3 class="text-lg font-bold text-primary mb-2">Threshold Zones</h3>
+            <p class="text-sm text-base-content/60">
+                Every parameter has optimal, warning, critical and lethal zones.
+                Know exactly when to act before it's too late.
+            </p>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body p-6">
+            <div class="text-4xl mb-3">🔬</div>
+            <h3 class="text-lg font-bold text-primary mb-2">Stage-Differentiated</h3>
+            <p class="text-sm text-base-content/60">
+                Parameters for every growth stage — germinating, seedling, vegetative,
+                flowering, fruiting, harvesting. For hydro and soil.
+            </p>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body p-6">
+            <div class="text-4xl mb-3">🔗</div>
+            <h3 class="text-lg font-bold text-primary mb-2">GBIF-Linked</h3>
+            <p class="text-sm text-base-content/60">
+                Every plant is linked to the GBIF backbone taxonomy.
+                Integrate with your app using a single stable key.
+            </p>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body p-6">
+            <div class="text-4xl mb-3">🤖</div>
+            <h3 class="text-lg font-bold text-primary mb-2">AI Pre-Filled</h3>
+            <p class="text-sm text-base-content/60">
+                New plants are automatically researched by Claude AI.
+                13 targeted calls per plant — botanical data plus all growth stages.
+            </p>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body p-6">
+            <div class="text-4xl mb-3">👥</div>
+            <h3 class="text-lg font-bold text-primary mb-2">Community Verified</h3>
+            <p class="text-sm text-base-content/60">
+                Trusted contributors review and improve AI data over time.
+                Quality grades show you exactly how reliable each entry is.
+            </p>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body p-6">
+            <div class="text-4xl mb-3">⚡</div>
+            <h3 class="text-lg font-bold text-primary mb-2">Public REST API</h3>
+            <p class="text-sm text-base-content/60">
+                Versioned JSON API with consistent envelopes, pagination,
+                GBIF key lookups and stage filtering. Free for everyone.
+            </p>
+        </div>
+    </div>
+
+</div>
+
+{# ── API Teaser ── #}
+<div class="card bg-neutral text-neutral-content shadow-sm mb-12">
+    <div class="card-body p-6">
+        <div class="flex items-center justify-between flex-wrap gap-4 mb-4">
+            <h2 class="text-lg font-bold">Quick API Example</h2>
+            <a href="{{ path('api_docs') }}" class="btn btn-sm btn-outline btn-primary text-primary-content border-primary-content/30 hover:bg-primary-content/10">
+                Full Documentation →
+            </a>
+        </div>
+        <pre class="text-xs overflow-x-auto text-neutral-content/80 leading-relaxed">GET /v1/plants/by-gbif/2874515/params?stage=vegetative&amp;system=hydroponic
+
+{
+  "status": "success",
+  "data": [{
+    "stage": "vegetative",
+    "water": {
+      "ph": { "optimal": { "min": 5.8, "max": 6.2 }, "lethal_after_hours": 48 },
+      "ec_ms_cm": { "optimal": { "min": 1.8, "max": 2.5 } }
+    },
+    "environment": {
+      "air_temp_c": { "optimal": { "min": 20, "max": 26 } },
+      "humidity_pct": { "optimal": { "min": 50, "max": 70 } }
+    }
+  }]
+}</pre>
+    </div>
+</div>
+
+{# ── Recent Plants ── #}
+{% if recent_plants|length > 0 %}
+<div class="mb-12">
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-primary">Recently Added</h2>
+        <a href="{{ path('plant_index') }}" class="text-sm text-base-content/50 hover:text-primary">View all →</a>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        {% for plant in recent_plants %}
+        <a href="{{ path('plant_detail', { slug: plant.slug }) }}"
+           class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="card-body p-4">
+                <p class="font-semibold italic text-primary text-sm truncate">{{ plant.canonicalName }}</p>
+                <p class="text-xs text-base-content/50 mt-0.5">{{ plant.family ?? 'Unknown family' }}</p>
+                <div class="flex items-center gap-2 mt-2">
+                    {% set gradeColor = { 'pending': 'badge-warning', 'draft': 'badge-info', 'community': 'badge-success', 'verified': 'badge-success' } %}
+                    <span class="badge {{ gradeColor[plant.qualityGrade] ?? 'badge-ghost' }} badge-xs">{{ plant.qualityGrade }}</span>
+                    {% if plant.completenessScore %}
+                    <span class="text-xs text-base-content/40">{{ plant.completenessScore }}% complete</span>
+                    {% endif %}
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{# ── Footer CTA ── #}
+<div class="text-center py-12 border-t border-base-300">
+    <p class="text-base-content/40 text-sm mb-4">
+        Open source · Powered by GBIF taxonomy · AI data by Claude · Community verified
+    </p>
+    <div class="flex justify-center gap-4">
+        <a href="{{ path('plant_request') }}" class="btn btn-primary btn-sm">Request a Plant</a>
+        <a href="{{ path('api_docs') }}" class="btn btn-ghost btn-sm">API Docs</a>
+    </div>
+</div>
+
+{% endblock %}

@@ -12,11 +12,20 @@ Flowerchino is a companion to [Florabase](https://github.com/tom-schorn/Florabas
 
 ## Tech Stack
 
-- **Backend:** PHP 8.5, Symfony
-- **Database:** MariaDB
+- **Backend:** PHP 8.3, Symfony 7.2
+- **Database:** SQLite (dev), MariaDB (prod)
 - **ORM:** Doctrine
+- **Frontend:** Twig + Tailwind CSS + DaisyUI (CDN, theme: `flowerchino`, cappuccino palette)
 - **Infrastructure:** Docker Compose, Devcontainer
 - **API:** REST, versioned (`/v1/...`)
+- **AI:** Anthropic Claude Haiku (13 calls per plant via Symfony HttpClient)
+- **Taxonomy source:** GBIF backbone API
+
+### DaisyUI Rules
+- All templates use DaisyUI tokens only — **no hardcoded hex/rgb/oklch values in templates**
+- Theme tokens: `bg-primary`, `text-primary-content`, `badge-success`, etc.
+- Semantic CSS classes for zone tables: `.zone-optimal`, `.zone-warn-bg`, `.zone-crit-bg`, `.zone-lethal-bg` (defined in `base.html.twig`)
+- Theme defined in `base.html.twig` `<style>` block using oklch format: `L% C H`
 
 ---
 
@@ -127,10 +136,43 @@ Return: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
 
 ---
 
+## Key Routes
+
+| Route | Controller | Notes |
+|-------|-----------|-------|
+| `/` | `StaticController::homepage` | Landing page |
+| `/plants` | `PlantController::index` | Plant list |
+| `/plants/{slug}` | `PlantController::detail` | Detail page |
+| `/plants/request` | `PlantRequestController` | Browser request flow |
+| `/plants/generating/{id}` | `PlantRequestController` | SSE progress page |
+| `/developers` | `DocsController` | API documentation |
+| `/sitemap.xml` | `StaticController::sitemap` | Dynamic sitemap |
+| `/robots.txt` | `StaticController::robotsTxt` | Robots file |
+| `/v1/plants` | `PlantApiController` | REST API |
+| `/v1/plants/suggest` | `PlantApiController` | Autocomplete + GBIF, with `in_flowerchino` flag |
+| `/v1/plants/request` | `PlantApiController` | POST JSON, runs AI fill sync, 90s timeout |
+| `/api/gbif-suggest` | `PlantRequestController` | GBIF proxy for browser |
+
+## Key Services
+
+| Service | Purpose |
+|---------|---------|
+| `PlantFillService` | 13 Claude AI calls, `fill(Plant, ?callable $progress)`, `updateCompleteness(Plant)` |
+| `RateLimitSubscriber` | 60 req/min per IP on `/v1/`, sets X-RateLimit-* headers |
+
+## Florabase Integration
+
+- **Link:** GBIF key stored in Florabase `plants` table as `gbif_key`
+- **Lookup:** `GET /v1/plants/by-gbif/{key}` — 404 means not yet in Flowerchino
+- **Request:** `POST /v1/plants/request` `{ gbif_key, canonical_name }` — returns full plant when done
+- **Autocomplete:** `GET /v1/plants/suggest?q=...` — returns `in_flowerchino` flag
+- **Sync detection:** compare `updated_at` (Flowerchino) with `params_synced_at` (Florabase)
+- **Missing data:** API always returns `null` fields explicitly — Florabase uses fallback values
+
 ## Project Conventions
 
 - Language: English (code, comments, commits, docs)
-- Commits: Conventional Commits, no AI attribution
+- Commits: `#71, #72 short description` style (issue refs first, no trailing punctuation)
 - Branch format: `{type}/{github-username}/{description}`
 - Protected branch: `main` — only via PR
 - Work with GitHub Milestones and Project Board
@@ -138,6 +180,7 @@ Return: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
 - Documentation in `Documentation/`
 - API versioned: `/v1/...`
 - Follow Symfony conventions (bundles, services, controllers, repositories)
+- Dev server: `php -S 0.0.0.0:8080 -t public/ public/router.php` (router.php required for .xml/.txt routes)
 
 ---
 
