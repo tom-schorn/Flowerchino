@@ -1,0 +1,111 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Generating {{ plant.canonicalName }} — Flowerchino{% endblock %}
+
+{% block body %}
+
+<div class="max-w-md mx-auto text-center py-8">
+
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-primary">
+            Generating <em>{{ plant.canonicalName }}</em>
+        </h1>
+        <p class="text-base-content/60 text-sm mt-2">
+            Claude is researching each growth stage. This takes about 30 seconds.
+        </p>
+    </div>
+
+    {# Progress bar #}
+    <progress id="progressBar" class="progress progress-success w-full mb-6" value="0" max="100"></progress>
+
+    {# Step list #}
+    <ul class="space-y-1 text-left mb-4">
+        <li id="step-meta"              class="step-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/40">
+            <span class="step-icon w-5 text-center">🌿</span><span>Botanical data &amp; taxonomy</span>
+        </li>
+        <li id="step-hydro_germinating" class="step-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/40">
+            <span class="step-icon w-5 text-center">💧</span><span>Hydroponic · Germinating</span>
+        </li>
+        <li id="step-hydro_seedling"    class="step-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/40">
+            <span class="step-icon w-5 text-center">💧</span><span>Hydroponic · Seedling</span>
+        </li>
+        <li id="step-hydro_vegetative"  class="step-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/40">
+            <span class="step-icon w-5 text-center">💧</span><span>Hydroponic · Vegetative</span>
+        </li>
+        <li id="step-hydro_flowering"   class="step-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/40">
+            <span class="step-icon w-5 text-center">💧</span><span>Hydroponic · Flowering</span>
+        </li>
+        <li id="step-hydro_fruiting"    class="step-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/40">
+            <span class="step-icon w-5 text-center">💧</span><span>Hydroponic · Fruiting</span>
+        </li>
+        <li id="step-hydro_harvesting"  class="step-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/40">
+            <span class="step-icon w-5 text-center">💧</span><span>Hydroponic · Harvesting</span>
+        </li>
+        <li id="step-soil_germinating"  class="step-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/40">
+            <span class="step-icon w-5 text-center">🌱</span><span>Soil · Germinating</span>
+        </li>
+        <li id="step-soil_seedling"     class="step-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/40">
+            <span class="step-icon w-5 text-center">🌱</span><span>Soil · Seedling</span>
+        </li>
+        <li id="step-soil_vegetative"   class="step-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/40">
+            <span class="step-icon w-5 text-center">🌱</span><span>Soil · Vegetative</span>
+        </li>
+        <li id="step-soil_flowering"    class="step-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/40">
+            <span class="step-icon w-5 text-center">🌱</span><span>Soil · Flowering</span>
+        </li>
+        <li id="step-soil_fruiting"     class="step-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/40">
+            <span class="step-icon w-5 text-center">🌱</span><span>Soil · Fruiting</span>
+        </li>
+        <li id="step-soil_harvesting"   class="step-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/40">
+            <span class="step-icon w-5 text-center">🌱</span><span>Soil · Harvesting</span>
+        </li>
+    </ul>
+
+    <p class="text-xs text-base-content/40" id="currentLabel">Starting…</p>
+</div>
+
+<script>
+const es  = new EventSource('/plants/generating/{{ plant.id }}/stream');
+const bar = document.getElementById('progressBar');
+const lbl = document.getElementById('currentLabel');
+
+es.addEventListener('ping', () => {});
+
+es.addEventListener('progress', e => {
+    const d = JSON.parse(e.data);
+
+    document.querySelectorAll('.step-item.active').forEach(el => {
+        el.classList.remove('active');
+        el.classList.add('done');
+        el.querySelector('.step-icon').textContent = '✓';
+    });
+
+    const el = document.getElementById('step-' + d.step);
+    if (el) el.classList.add('active');
+
+    bar.value = Math.round((d.current / d.total) * 100);
+    lbl.textContent = d.label + '…';
+});
+
+es.addEventListener('done', e => {
+    const d = JSON.parse(e.data);
+    es.close();
+
+    document.querySelectorAll('.step-item.active').forEach(el => {
+        el.classList.remove('active');
+        el.classList.add('done');
+        el.querySelector('.step-icon').textContent = '✓';
+    });
+
+    bar.value = 100;
+    lbl.textContent = 'Done! Redirecting…';
+
+    setTimeout(() => { window.location.href = '/plants/' + d.slug; }, 600);
+});
+
+es.onerror = () => {
+    lbl.textContent = 'Connection lost — please reload.';
+    es.close();
+};
+</script>
+{% endblock %}

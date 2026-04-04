@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="flowerchino">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Flowerchino{% endblock %}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>">
+
+    {# Tailwind + DaisyUI #}
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    {# DaisyUI custom theme — cappuccino palette, oklch format (L% C H) #}
+    <style>
+        [data-theme="flowerchino"] {
+            /* Primary: dark espresso brown */
+            --p:  35%  0.08  40;
+            --pf: 28%  0.08  40;
+            --pc: 98%  0.002  0;
+            /* Secondary: warm caramel */
+            --s:  62%  0.08  50;
+            --sf: 55%  0.08  50;
+            --sc: 98%  0.002  0;
+            /* Accent: muted sage green */
+            --a:  52%  0.09 145;
+            --af: 45%  0.09 145;
+            --ac: 98%  0.002  0;
+            /* Neutral: near-black espresso */
+            --n:  22%  0.05  40;
+            --nf: 18%  0.05  40;
+            --nc: 98%  0.002  0;
+            /* Base: warm cream surfaces */
+            --b1: 97%  0.012  80;
+            --b2: 93%  0.018  80;
+            --b3: 87%  0.025  80;
+            --bc: 20%  0.06   40;
+            /* Status */
+            --su: 55%  0.15  142;
+            --wa: 78%  0.14   65;
+            --er: 55%  0.20   25;
+            --in: 65%  0.15  220;
+            --suc: 98%  0.002  0;
+            --wac: 20%  0.05  40;
+            --erc: 98%  0.002  0;
+            --inc: 98%  0.002  0;
+            /* Custom: lethal zone (muted plum) */
+            --lethal: 0.50 0.10 285;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar       { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: oklch(var(--b2)); }
+        ::-webkit-scrollbar-thumb { background: oklch(var(--p) / 0.35); border-radius: 3px; }
+
+        /* Zone table semantic colours — no hardcoded values */
+        .zone-optimal     { color: oklch(var(--su)); }
+        .zone-warn-text   { color: oklch(var(--wa)); }
+        .zone-crit-text   { color: oklch(var(--er)); }
+        .zone-lethal-text { color: oklch(var(--lethal)); }
+        .zone-warn-bg     { background-color: oklch(var(--wa) / 0.08); }
+        .zone-crit-bg     { background-color: oklch(var(--er) / 0.08); }
+        .zone-lethal-bg   { background-color: oklch(var(--lethal) / 0.07); }
+
+        /* Step list (generating page) */
+        .step-item.active { background: oklch(var(--b2)); color: oklch(var(--p)); font-weight: 600; }
+        .step-item.done   { color: oklch(var(--su)); }
+    </style>
+
+    {% block stylesheets %}{% endblock %}
+</head>
+<body class="bg-base-200 min-h-screen">
+
+{# ── Navbar ── #}
+<div class="navbar bg-primary text-primary-content shadow-md px-4 lg:px-8">
+    <div class="navbar-start">
+        <a href="{{ path('homepage') }}" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <span class="text-xl">🌱</span>
+            <span class="font-bold text-lg tracking-tight">Flowerchino</span>
+        </a>
+    </div>
+    <div class="navbar-center hidden md:flex">
+        <ul class="menu menu-horizontal gap-1 text-sm">
+            <li><a href="{{ path('plant_index') }}" class="text-primary-content/80 hover:text-primary-content hover:bg-primary-content/10 rounded-lg">Plants</a></li>
+            <li><a href="{{ path('plant_request') }}" class="text-primary-content/80 hover:text-primary-content hover:bg-primary-content/10 rounded-lg">Request</a></li>
+            <li><a href="{{ path('api_docs') }}" class="text-primary-content/80 hover:text-primary-content hover:bg-primary-content/10 rounded-lg">Developers</a></li>
+        </ul>
+    </div>
+    <div class="navbar-end">
+        <a href="{{ path('plant_request') }}" class="btn btn-sm bg-primary-content/15 hover:bg-primary-content/25 text-primary-content border-0">
+            + Request Plant
+        </a>
+    </div>
+</div>
+
+{# ── Content ── #}
+<main class="max-w-6xl mx-auto px-4 py-8">
+    {% block body %}{% endblock %}
+</main>
+
+{% block javascripts %}
+    {% block importmap %}{{ importmap('app') }}{% endblock %}
+{% endblock %}
+
+</body>
+</html>

@@ -1,0 +1,141 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Request a Plant — Flowerchino{% endblock %}
+
+{% block body %}
+
+<div class="max-w-xl mx-auto">
+    <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-primary">Request a Plant</h1>
+        <p class="text-base-content/60 mt-2">
+            Search for any species. If it's not in our database yet, Claude will generate the growing parameters.
+        </p>
+    </div>
+
+    {# Search #}
+    <div class="relative">
+        <input type="text" id="searchInput"
+               placeholder="e.g. Solanum lycopersicum, Basil, Cannabis sativa…"
+               autocomplete="off" spellcheck="false"
+               class="input input-bordered w-full text-base focus:outline-none focus:border-primary">
+
+        {# Suggestions dropdown #}
+        <div id="suggestions"
+             class="absolute top-full left-0 right-0 mt-1 bg-base-100 border border-base-300
+                    rounded-xl shadow-xl z-50 max-h-72 overflow-y-auto hidden">
+        </div>
+    </div>
+
+    {# Confirm card #}
+    <div id="confirmCard" class="hidden mt-4">
+        <div class="card bg-base-100 border-2 border-success shadow-sm">
+            <div class="card-body p-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="font-bold italic text-primary" id="confirmName"></p>
+                        <p class="text-sm text-base-content/60 mt-0.5" id="confirmMeta"></p>
+                    </div>
+                    <button onclick="clearSelection()" class="btn btn-ghost btn-xs">✕</button>
+                </div>
+                <form method="POST" action="{{ path('plant_request_submit') }}" class="mt-3">
+                    <input type="hidden" name="gbif_key" id="hiddenGbifKey">
+                    <input type="hidden" name="canonical_name" id="hiddenName">
+                    <button type="submit" class="btn w-full bg-primary hover:bg-primary-focus text-white border-0">
+                        Generate growing parameters →
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <p class="text-center text-xs text-base-content/40 mt-6">
+        Powered by GBIF taxonomy · AI-filled data by Claude · Community-verified over time
+    </p>
+</div>
+
+<script>
+let debounceTimer;
+const input       = document.getElementById('searchInput');
+const suggestions = document.getElementById('suggestions');
+const confirmCard = document.getElementById('confirmCard');
+const confirmName = document.getElementById('confirmName');
+const confirmMeta = document.getElementById('confirmMeta');
+const hiddenKey   = document.getElementById('hiddenGbifKey');
+const hiddenName  = document.getElementById('hiddenName');
+
+input.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    const q = input.value.trim();
+    if (q.length < 2) { closeSuggestions(); return; }
+    debounceTimer = setTimeout(() => fetchSuggestions(q), 250);
+});
+
+input.addEventListener('keydown', (e) => {
+    const items = [...suggestions.querySelectorAll('[data-item]')];
+    const sel   = suggestions.querySelector('[data-item].bg-base-200');
+    let idx     = sel ? items.indexOf(sel) : -1;
+    if (e.key === 'ArrowDown') { e.preventDefault(); selectItem(items, Math.min(idx + 1, items.length - 1)); }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); selectItem(items, Math.max(idx - 1, 0)); }
+    if (e.key === 'Enter' && sel) { e.preventDefault(); pickItem(sel); }
+    if (e.key === 'Escape') { closeSuggestions(); }
+});
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.relative')) closeSuggestions();
+});
+
+async function fetchSuggestions(q) {
+    const res  = await fetch(`/api/gbif-suggest?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    renderSuggestions(data);
+}
+
+function renderSuggestions(items) {
+    if (!items.length) { closeSuggestions(); return; }
+    suggestions.innerHTML = items.map(item => `
+        <div data-item
+             data-key="${item.key}"
+             data-name="${esc(item.canonical_name)}"
+             data-family="${esc(item.family ?? '')}"
+             data-rank="${esc(item.rank ?? '')}"
+             class="px-4 py-3 cursor-pointer hover:bg-base-200 border-b border-base-200 last:border-0 transition-colors">
+            <div class="font-semibold italic text-sm text-primary">${esc(item.canonical_name)}</div>
+            <div class="text-xs text-base-content/50 mt-0.5">${[item.family, item.rank].filter(Boolean).join(' · ')}</div>
+        </div>
+    `).join('');
+    suggestions.querySelectorAll('[data-item]').forEach(el => {
+        el.addEventListener('click', () => pickItem(el));
+    });
+    suggestions.classList.remove('hidden');
+}
+
+function selectItem(items, idx) {
+    items.forEach(el => el.classList.remove('bg-base-200'));
+    if (items[idx]) items[idx].classList.add('bg-base-200');
+}
+
+function pickItem(el) {
+    hiddenKey.value  = el.dataset.key;
+    hiddenName.value = el.dataset.name;
+    input.value      = el.dataset.name;
+    confirmName.textContent = el.dataset.name;
+    confirmMeta.textContent = [el.dataset.family, el.dataset.rank, `GBIF #${el.dataset.key}`].filter(Boolean).join(' · ');
+    confirmCard.classList.remove('hidden');
+    closeSuggestions();
+}
+
+function clearSelection() {
+    confirmCard.classList.add('hidden');
+    input.value = '';
+}
+
+function closeSuggestions() {
+    suggestions.classList.add('hidden');
+    suggestions.innerHTML = '';
+}
+
+function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Generating {{ plant.canonicalName }} — Flowerchino{% endblock %}
+
+{% block body %}
+<div class="max-w-md mx-auto text-center py-16">
+
+    <span class="loading loading-spinner loading-lg text-primary mb-6"></span>
+
+    <h1 class="text-2xl font-bold text-primary">
+        Generating <em>{{ plant.canonicalName }}</em>
+    </h1>
+    <p class="text-base-content/60 text-sm mt-2 mb-8">
+        Claude is researching growth stages and parameters. Usually takes 15–30 seconds.
+    </p>
+
+    <ul class="steps steps-vertical text-left mb-6">
+        <li class="step step-primary" id="step-queued">Request queued</li>
+        <li class="step step-primary" id="step-ai">AI generating plant data</li>
+        <li class="step" id="step-saving">Saving to database</li>
+        <li class="step" id="step-done">Done</li>
+    </ul>
+
+    <p class="text-xs text-base-content/40" id="elapsed">0s elapsed</p>
+</div>
+
+<script>
+const plantId  = {{ plant.id }};
+const slug     = {{ plant.slug|json_encode }};
+const start    = Date.now();
+let   interval;
+
+function updateElapsed() {
+    document.getElementById('elapsed').textContent =
+        Math.floor((Date.now() - start) / 1000) + 's elapsed';
+}
+
+async function poll() {
+    updateElapsed();
+    try {
+        const res  = await fetch(`/v1/plants/${plantId}/status`);
+        const body = await res.json();
+        if (body.data?.quality_grade && body.data.quality_grade !== 'pending') {
+            document.getElementById('step-saving').classList.add('step-primary');
+            document.getElementById('step-done').classList.add('step-primary');
+            clearInterval(interval);
+            setTimeout(() => { window.location.href = '/plants/' + slug; }, 800);
+        }
+    } catch (_) {}
+}
+
+interval = setInterval(poll, 2000);
+poll();
+</script>
+{% endblock %}
