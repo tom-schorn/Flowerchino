@@ -1,6 +1,29 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}{{ plant.canonicalName }} — Flowerchino{% endblock %}
+{% block meta_description %}Growing parameters for {{ plant.canonicalName }}{% if plant.commonNames|length > 0 %} ({{ plant.commonNames[0].name }}){% endif %} — pH, EC, temperature, humidity, light and nutrients for every growth stage. Hydroponic and soil.{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block canonical %}https://flowerchino.de/plants/{{ plant.slug }}{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    "name": "{{ plant.canonicalName }} — Growing Parameters",
+    "description": "Stage-differentiated growing parameters for {{ plant.canonicalName }}{% if plant.family %} (family {{ plant.family }}){% endif %} covering hydroponics and soil cultivation.",
+    "url": "https://flowerchino.de/plants/{{ plant.slug }}",
+    "creator": {
+        "@type": "Organization",
+        "name": "Flowerchino",
+        "url": "https://flowerchino.de"
+    },
+    "keywords": "{{ plant.canonicalName }}, {% if plant.family %}{{ plant.family }}, {% endif %}hydroponics, growing parameters, pH, EC{% if plant.commonNames|length > 0 %}, {{ plant.commonNames[0].name }}{% endif %}",
+    "license": "https://creativecommons.org/licenses/by/4.0/",
+    "isAccessibleForFree": true
+}
+</script>
+{% endblock %}
 
 {% block body %}
 

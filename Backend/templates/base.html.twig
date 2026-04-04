@@ -4,6 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Flowerchino{% endblock %}</title>
+
+    {# ── SEO ── #}
+    <meta name="description" content="{% block meta_description %}Flowerchino is the open plant knowledge platform — stage-differentiated hydroponics and soil parameters for every species, free public API.{% endblock %}">
+    <meta name="robots" content="{% block meta_robots %}index, follow{% endblock %}">
+    <link rel="canonical" href="{% block canonical %}{{ app.request.uri }}{% endblock %}">
+
+    {# OpenGraph #}
+    <meta property="og:type"        content="{% block og_type %}website{% endblock %}">
+    <meta property="og:site_name"   content="Flowerchino">
+    <meta property="og:title"       content="{% block og_title %}{{ block('title') }}{% endblock %}">
+    <meta property="og:description" content="{{ block('meta_description') }}">
+    <meta property="og:url"         content="{{ app.request.uri }}">
+    <meta property="og:locale"      content="en_US">
+
+    {# Twitter Card #}
+    <meta name="twitter:card"        content="summary">
+    <meta name="twitter:title"       content="{{ block('og_title') }}">
+    <meta name="twitter:description" content="{{ block('meta_description') }}">
+
+    {# Structured data — can be overridden per page #}
+    {% block structured_data %}
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Flowerchino",
+        "url": "https://flowerchino.de",
+        "description": "Open plant knowledge platform with stage-differentiated hydroponics and soil growing parameters",
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://flowerchino.de/plants?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+        }
+    }
+    </script>
+    {% endblock %}
+
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>">
 
     {# Tailwind + DaisyUI #}
