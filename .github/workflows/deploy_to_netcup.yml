@@ -145,7 +145,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: Backend
-          publish_branch: release
+          publish_branch: deploy/Netcup
           force_orphan: true
           commit_message: "deploy: build from main@${{ github.sha }}"
 
