@@ -6,22 +6,41 @@ use App\Entity\GrowSystem;
 use App\Entity\GrowSystemCompatibility;
 use App\Entity\Plant;
 use App\Entity\StageParams;
+use App\Repository\PlantRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'app:seed:test', description: 'Seed test data')]
+#[AsCommand(name: 'app:seed:test', description: 'Seed test data (local dev only)')]
 class SeedTestDataCommand extends Command
 {
-    public function __construct(private EntityManagerInterface $em)
-    {
+    public function __construct(
+        private EntityManagerInterface $em,
+        private PlantRepository $plants,
+    ) {
         parent::__construct();
+    }
+
+    protected function configure(): void
+    {
+        $this->addOption('fresh', null, InputOption::VALUE_NONE, 'Drop existing seed data first');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        if ($input->getOption('fresh')) {
+            // Remove existing Citrullus lanatus if present
+            $existing = $this->plants->findOneBy(['slug' => 'citrullus-lanatus']);
+            if ($existing) {
+                $this->em->remove($existing);
+                $this->em->flush();
+                $output->writeln('<comment>Removed existing Citrullus lanatus.</comment>');
+            }
+        }
+
         // GrowSystems
         $hydro = [
             ['name' => 'Deep Water Culture', 'slug' => 'dwc', 'type' => 'hydroponic'],
@@ -38,9 +57,12 @@ class SeedTestDataCommand extends Command
 
         $gs = [];
         foreach (array_merge($hydro, $nonHydro) as $s) {
-            $entity = new GrowSystem();
-            $entity->setName($s['name'])->setSlug($s['slug'])->setType($s['type']);
-            $this->em->persist($entity);
+            $entity = $this->em->getRepository(GrowSystem::class)->findOneBy(['slug' => $s['slug']]);
+            if (!$entity) {
+                $entity = new GrowSystem();
+                $entity->setName($s['name'])->setSlug($s['slug'])->setType($s['type']);
+                $this->em->persist($entity);
+            }
             $gs[$s['slug']] = $entity;
         }
 
