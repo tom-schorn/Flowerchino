@@ -24,7 +24,7 @@ jobs:
       # 1. CHECKOUT & SETUP
       # ==========================================
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
 
@@ -40,7 +40,7 @@ jobs:
       # 2. CACHE COMPOSER DEPENDENCIES
       # ==========================================
       - name: 💾 Cache Composer Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: Backend/vendor
           key: ${{ runner.os }}-composer-${{ hashFiles('Backend/composer.lock') }}
@@ -141,7 +141,7 @@ jobs:
       # 8. DEPLOY TO RELEASE BRANCH
       # ==========================================
       - name: 🚀 Deploy to Release Branch
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: Backend
