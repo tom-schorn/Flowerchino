@@ -23,6 +23,8 @@
                 <li>Dates are ISO 8601 (<code class="bg-base-300 px-1 rounded">2026-04-03T12:00:00+00:00</code>)</li>
                 <li>Missing parameters return <code class="bg-base-300 px-1 rounded">null</code> — never omitted</li>
                 <li>Lists include <code class="bg-base-300 px-1 rounded">meta.total</code>, <code class="bg-base-300 px-1 rounded">meta.per_page</code>, <code class="bg-base-300 px-1 rounded">meta.current_page</code></li>
+                <li>Rate limit: <strong>60 requests / minute</strong> per IP — headers: <code class="bg-base-300 px-1 rounded">X-RateLimit-Limit</code>, <code class="bg-base-300 px-1 rounded">X-RateLimit-Remaining</code>, <code class="bg-base-300 px-1 rounded">X-RateLimit-Reset</code></li>
+                <li>HTTP <code class="bg-base-300 px-1 rounded">429</code> when exceeded</li>
             </ul>
         </div>
     </div>
