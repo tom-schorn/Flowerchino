@@ -91,6 +91,7 @@ jobs:
         working-directory: Backend
         run: |
           php bin/console assets:install public --env=prod --no-debug
+          php bin/console importmap:install --no-interaction
           echo "✅ Assets installed"
 
       # ==========================================
