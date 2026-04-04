@@ -1,0 +1,305 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ plant.canonicalName }} — Flowerchino{% endblock %}
+{% block meta_description %}Growing parameters for {{ plant.canonicalName }}{% if plant.commonNames|length > 0 %} ({{ plant.commonNames[0].name }}){% endif %} — pH, EC, temperature, humidity, light and nutrients for every growth stage. Hydroponic and soil.{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block canonical %}https://flowerchino.de/plants/{{ plant.slug }}{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    "name": "{{ plant.canonicalName }} — Growing Parameters",
+    "description": "Stage-differentiated growing parameters for {{ plant.canonicalName }}{% if plant.family %} (family {{ plant.family }}){% endif %} covering hydroponics and soil cultivation.",
+    "url": "https://flowerchino.de/plants/{{ plant.slug }}",
+    "creator": {
+        "@type": "Organization",
+        "name": "Flowerchino",
+        "url": "https://flowerchino.de"
+    },
+    "keywords": "{{ plant.canonicalName }}, {% if plant.family %}{{ plant.family }}, {% endif %}hydroponics, growing parameters, pH, EC{% if plant.commonNames|length > 0 %}, {{ plant.commonNames[0].name }}{% endif %}",
+    "license": "https://creativecommons.org/licenses/by/4.0/",
+    "isAccessibleForFree": true
+}
+</script>
+{% endblock %}
+
+{% block body %}
+
+{# ── Header ── #}
+<div class="bg-primary text-white rounded-2xl p-6 mb-6">
+    <div class="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+            <h1 class="text-3xl font-bold italic">{{ plant.canonicalName }}</h1>
+            <p class="text-primary-content/60 text-sm mt-1">{{ plant.scientificName }}</p>
+            {% if plant.commonNames %}
+            <div class="flex flex-wrap gap-2 mt-3">
+                {% for cn in plant.commonNames %}
+                <span class="bg-white/10 rounded-full px-3 py-0.5 text-xs">
+                    {{ cn.name }} <span class="opacity-60">{{ cn.lang }}</span>
+                </span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="flex flex-wrap gap-2">
+            {% set gradeColor = { 'pending': 'badge-warning', 'draft': 'badge-info', 'community': 'badge-success', 'verified': 'badge-success' } %}
+            <span class="badge {{ gradeColor[plant.qualityGrade] ?? 'badge-ghost' }} badge-md">{{ plant.qualityGrade }}</span>
+            {% if plant.aiPrefilled %}<span class="badge badge-accent badge-md">AI pre-filled</span>{% endif %}
+            {% if plant.completenessScore %}<span class="badge badge-ghost badge-md text-white/80 border-white/20">{{ plant.completenessScore }}% complete</span>{% endif %}
+        </div>
+    </div>
+</div>
+
+{# ── Info grid ── #}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+
+    {# Taxonomy #}
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body p-5">
+            <h2 class="text-xs font-bold uppercase tracking-widest text-base-content/40 mb-3">Botanical Classification</h2>
+            <table class="w-full text-sm">
+                {% for row in [
+                    ['Kingdom', plant.kingdom], ['Phylum', plant.phylum], ['Class', plant.class],
+                    ['Order', plant.order], ['Family', plant.family], ['Genus', plant.genus],
+                    ['Species', plant.species], ['Rank', plant.rank], ['Status', plant.taxonomicStatus]
+                ] %}
+                {% if row[1] %}
+                <tr class="border-b border-base-200 last:border-0">
+                    <td class="py-1.5 text-base-content/50 w-1/3">{{ row[0] }}</td>
+                    <td class="py-1.5 font-medium">{{ row[1] }}</td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </table>
+            {% if plant.gbifKey or plant.ipniId %}
+            <div class="flex gap-4 mt-3 pt-3 border-t border-base-200">
+                {% if plant.gbifKey %}
+                <a href="https://www.gbif.org/species/{{ plant.gbifKey }}" target="_blank"
+                   class="text-xs text-primary hover:underline">GBIF #{{ plant.gbifKey }}</a>
+                {% endif %}
+                {% if plant.ipniId %}
+                <a href="https://www.ipni.org/n/{{ plant.ipniId }}" target="_blank"
+                   class="text-xs text-primary hover:underline">IPNI {{ plant.ipniId }}</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Growth #}
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body p-5">
+            <h2 class="text-xs font-bold uppercase tracking-widest text-base-content/40 mb-3">Growth Characteristics</h2>
+            <div class="space-y-2 text-sm">
+                {% if plant.cycleDaysMin %}
+                <div class="flex justify-between border-b border-base-200 pb-2">
+                    <span class="text-base-content/50">Cycle duration</span>
+                    <span class="font-semibold">{{ plant.cycleDaysMin }}–{{ plant.cycleDaysMax }} days</span>
+                </div>
+                {% endif %}
+                <div class="flex justify-between border-b border-base-200 pb-2">
+                    <span class="text-base-content/50">Multi-harvest</span>
+                    <span class="font-semibold">{{ plant.multiHarvest ? 'Yes' : 'No' }}</span>
+                </div>
+                <div class="flex justify-between border-b border-base-200 pb-2">
+                    <span class="text-base-content/50">Has dormant stage</span>
+                    <span class="font-semibold">{{ plant.hasDormant ? 'Yes' : 'No' }}</span>
+                </div>
+                {% if plant.yieldPotential %}
+                <div class="flex justify-between">
+                    <span class="text-base-content/50">Yield potential</span>
+                    <span class="font-semibold capitalize">{{ plant.yieldPotential }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if compatibilities|length > 0 %}
+            <h2 class="text-xs font-bold uppercase tracking-widest text-base-content/40 mt-5 mb-2">Compatible Systems</h2>
+            <div class="flex flex-wrap gap-2">
+                {% for compat in compatibilities %}
+                {% set typeColor = {
+                    'hydroponic': 'badge-info',
+                    'soil':       'badge-warning',
+                    'coco':       'badge-secondary'
+                } %}
+                <span class="badge text-xs {{ typeColor[compat.growSystem.type] ?? 'badge-ghost' }}">
+                    {{ compat.growSystem.name }}
+                </span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{# ── Stage Parameters ── #}
+{% if paramsByMedium|length > 0 %}
+<div class="card bg-base-100 shadow-sm mb-6">
+    <div class="card-body p-5">
+        <h2 class="text-xs font-bold uppercase tracking-widest text-base-content/40 mb-4">Parameters by Growth Stage</h2>
+
+        {# Medium toggle #}
+        {% set mediumLabels = { 'hydroponic': '💧 Hydroponic', 'soil': '🌱 Soil', 'coco': '🥥 Coco Coir' } %}
+        <div class="tabs tabs-boxed bg-base-200 w-fit mb-5" id="mediumTabs">
+            {% for medium, stages in paramsByMedium %}
+            <button class="tab {% if loop.first %}tab-active{% endif %} font-semibold"
+                    onclick="showMedium('{{ medium }}', this)">
+                {{ mediumLabels[medium] ?? medium|capitalize }}
+            </button>
+            {% endfor %}
+        </div>
+
+        {# Panels #}
+        {% for medium, stages in paramsByMedium %}
+        <div class="medium-panel {% if not loop.first %}hidden{% endif %}" id="medium-{{ medium }}">
+
+            {# Stage tabs #}
+            <div class="flex flex-wrap gap-2 mb-4">
+                {% for stage, sp in stages %}
+                <button class="stage-tab btn btn-sm {% if loop.first %}bg-primary text-white border-0{% else %}btn-ghost border border-base-300{% endif %}"
+                        onclick="showStage('{{ medium }}', '{{ stage }}', this)">
+                    {{ stage|capitalize }}
+                    {% if sp.stageDaysMin %}
+                    <span class="text-xs opacity-60 ml-1">{{ sp.stageDaysMin }}–{{ sp.stageDaysMax }}d</span>
+                    {% endif %}
+                </button>
+                {% endfor %}
+            </div>
+
+            {# Stage content #}
+            {% for stage, sp in stages %}
+            <div class="stage-content {% if not loop.first %}hidden{% endif %} space-y-4"
+                 id="stage-{{ medium }}-{{ stage }}">
+
+                {# Water & Nutrients #}
+                <div class="card bg-base-50 border border-base-200">
+                    <div class="card-body p-4">
+                        <h3 class="text-xs font-bold uppercase tracking-widest text-base-content/40 mb-3">Water & Nutrients</h3>
+                        {{ _self.zoneTable([
+                            sp.phMin      ? ['pH',             sp.phMin,       sp.phMax,       sp.phWarnMin,       sp.phWarnMax,       sp.phCritMin,       sp.phCritMax,       sp.phCritToleranceHours]       : null,
+                            sp.ecMin      ? ['EC (mS/cm)',     sp.ecMin,       sp.ecMax,       sp.ecWarnMin,       sp.ecWarnMax,       sp.ecCritMin,       sp.ecCritMax,       sp.ecCritToleranceHours]       : null,
+                            sp.tdsMin     ? ['TDS (ppm)',      sp.tdsMin,      sp.tdsMax,      null, null, null, null, null]                                                                                  : null,
+                            sp.waterTempMin ? ['Water Temp °C', sp.waterTempMin, sp.waterTempMax, sp.waterTempWarnMin, sp.waterTempWarnMax, sp.waterTempCritMin, sp.waterTempCritMax, sp.waterTempCritToleranceHours] : null,
+                            sp.nPpm       ? ['N (ppm)',        sp.nPpm,        sp.nPpm,        null, null, null, null, null]                                                                                  : null,
+                            sp.pPpm       ? ['P (ppm)',        sp.pPpm,        sp.pPpm,        null, null, null, null, null]                                                                                  : null,
+                            sp.kPpm       ? ['K (ppm)',        sp.kPpm,        sp.kPpm,        null, null, null, null, null]                                                                                  : null,
+                            sp.caPpm      ? ['Ca (ppm)',       sp.caPpm,       sp.caPpm,       null, null, null, null, null]                                                                                  : null,
+                            sp.mgPpm      ? ['Mg (ppm)',       sp.mgPpm,       sp.mgPpm,       null, null, null, null, null]                                                                                  : null,
+                            sp.sPpm       ? ['S (ppm)',        sp.sPpm,        sp.sPpm,        null, null, null, null, null]                                                                                  : null,
+                        ]|filter(v => v is not null)) }}
+                    </div>
+                </div>
+
+                {# Environment #}
+                <div class="card bg-base-50 border border-base-200">
+                    <div class="card-body p-4">
+                        <h3 class="text-xs font-bold uppercase tracking-widest text-base-content/40 mb-3">Environment</h3>
+                        {{ _self.zoneTable([
+                            sp.airTempMin  ? ['Air Temp °C',  sp.airTempMin,  sp.airTempMax,  sp.airTempWarnMin,  sp.airTempWarnMax,  sp.airTempCritMin,  sp.airTempCritMax,  sp.airTempCritToleranceHours]  : null,
+                            sp.humidityMin ? ['Humidity %',   sp.humidityMin, sp.humidityMax, sp.humidityWarnMin, sp.humidityWarnMax, sp.humidityCritMin, sp.humidityCritMax, sp.humidityCritToleranceHours] : null,
+                            sp.vpdMin      ? ['VPD (kPa)',    sp.vpdMin,      sp.vpdMax,      null, null, null, null, null]                                                                                   : null,
+                        ]|filter(v => v is not null)) }}
+                    </div>
+                </div>
+
+                {# Light #}
+                <div class="card bg-base-50 border border-base-200">
+                    <div class="card-body p-4">
+                        <h3 class="text-xs font-bold uppercase tracking-widest text-base-content/40 mb-3">Light</h3>
+                        {{ _self.zoneTable([
+                            sp.ppfdMin         ? ['PPFD (µmol/m²/s)',  sp.ppfdMin,         sp.ppfdMax,         null, null, null, null, null] : null,
+                            sp.dliMin          ? ['DLI (mol/m²/day)', sp.dliMin,          sp.dliMax,          null, null, null, null, null] : null,
+                            sp.photoperiodHours ? ['Photoperiod (h)',  sp.photoperiodHours, sp.photoperiodHours, null, null, null, null, null] : null,
+                        ]|filter(v => v is not null)) }}
+                    </div>
+                </div>
+
+            </div>{# end stage-content #}
+            {% endfor %}
+
+        </div>{# end medium-panel #}
+        {% endfor %}
+
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{# ── Zone table macro ── #}
+{% macro zoneTable(rows) %}
+{% if rows|length > 0 %}
+<div class="overflow-x-auto">
+<table class="table table-xs w-full">
+    <thead>
+        <tr class="border-b border-base-200">
+            <th class="text-left font-normal text-base-content/40 w-36"></th>
+            <th class="text-center zone-optimal font-semibold">Optimal</th>
+            <th class="text-center zone-warn-text zone-warn-bg font-semibold" colspan="2">Warning</th>
+            <th class="text-center zone-crit-text zone-crit-bg font-semibold" colspan="2">Critical</th>
+            <th class="text-center zone-lethal-text zone-lethal-bg font-semibold">Lethal after</th>
+        </tr>
+        <tr class="border-b border-base-200 text-xs">
+            <th></th>
+            <th></th>
+            <th class="text-center zone-warn-text zone-warn-bg font-normal">Too low</th>
+            <th class="text-center zone-warn-text zone-warn-bg font-normal">Too high</th>
+            <th class="text-center zone-crit-text zone-crit-bg font-normal">Too low</th>
+            <th class="text-center zone-crit-text zone-crit-bg font-normal">Too high</th>
+            <th class="zone-lethal-bg"></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr class="border-b border-base-200/50 last:border-0 hover:bg-base-100">
+            <td class="text-base-content/50 text-xs py-2">{{ row[0] }}</td>
+            <td class="text-center font-semibold zone-optimal py-2">
+                {% if row[1] == row[2] %}{{ row[1] }}{% else %}{{ row[1] }} – {{ row[2] }}{% endif %}
+            </td>
+            <td class="text-center text-xs zone-warn-bg py-2">
+                {% if row[3] is not null %}{{ row[3] }} – {{ row[1] }}{% else %}<span class="text-base-content/20">—</span>{% endif %}
+            </td>
+            <td class="text-center text-xs zone-warn-bg py-2">
+                {% if row[4] is not null %}{{ row[2] }} – {{ row[4] }}{% else %}<span class="text-base-content/20">—</span>{% endif %}
+            </td>
+            <td class="text-center text-xs zone-crit-bg py-2">
+                {% if row[5] is not null %}{{ row[5] }} – {{ row[3] ?? row[1] }}{% else %}<span class="text-base-content/20">—</span>{% endif %}
+            </td>
+            <td class="text-center text-xs zone-crit-bg py-2">
+                {% if row[6] is not null %}{{ row[4] ?? row[2] }} – {{ row[6] }}{% else %}<span class="text-base-content/20">—</span>{% endif %}
+            </td>
+            <td class="text-center text-xs zone-lethal-bg py-2">
+                {% if row[7] is not null %}<strong>{{ row[7] }}h</strong>{% else %}<span class="text-base-content/20">—</span>{% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+function showMedium(medium, btn) {
+    document.querySelectorAll('.medium-panel').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('#mediumTabs .tab').forEach(el => el.classList.remove('tab-active'));
+    document.getElementById('medium-' + medium).classList.remove('hidden');
+    btn.classList.add('tab-active');
+}
+function showStage(medium, stage, btn) {
+    const panel = document.getElementById('medium-' + medium);
+    panel.querySelectorAll('.stage-content').forEach(el => el.classList.add('hidden'));
+    panel.querySelectorAll('.stage-tab').forEach(el => {
+        el.className = el.className.replace('bg-primary text-white border-0', '').trim();
+        el.classList.add('btn-ghost', 'border', 'border-base-300');
+    });
+    document.getElementById('stage-' + medium + '-' + stage).classList.remove('hidden');
+    btn.classList.remove('btn-ghost', 'border', 'border-base-300');
+    btn.classList.add('bg-primary', 'text-white', 'border-0');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,142 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Plants — Flowerchino{% endblock %}
+{% block meta_description %}Browse the Flowerchino plant database — growing parameters for hundreds of species, stage-differentiated for hydroponics and soil.{% endblock %}
+{% block canonical %}https://flowerchino.de/plants{% endblock %}
+
+{% block body %}
+
+{# ── Header ── #}
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-primary">Plant Database</h1>
+    <p class="text-base-content/60 mt-1">{{ total }} plant{{ total != 1 ? 's' : '' }} in the database</p>
+</div>
+
+{# ── Search ── #}
+<form method="GET" action="{{ path('plant_index') }}" class="mb-8">
+    <div class="join w-full max-w-lg">
+        <input type="text" name="q" value="{{ q }}"
+               placeholder="Search by name, genus, family…"
+               class="input input-bordered join-item flex-1 focus:outline-none focus:border-primary">
+        <button type="submit" class="btn join-item bg-primary hover:bg-primary-focus text-white border-0">
+            Search
+        </button>
+        {% if q %}
+        <a href="{{ path('plant_index') }}" class="btn join-item btn-ghost">✕</a>
+        {% endif %}
+    </div>
+</form>
+
+{% if q and total == 0 %}
+{# ── No results ── #}
+<div class="hero py-16">
+    <div class="hero-content text-center">
+        <div>
+            <p class="text-5xl mb-4">🔍</p>
+            <h2 class="text-xl font-bold mb-2">No results for "{{ q }}"</h2>
+            <p class="text-base-content/60 mb-6">This plant isn't in our database yet.</p>
+            <a href="{{ path('plant_request') }}?q={{ q|url_encode }}" class="btn bg-primary text-white border-0 hover:bg-primary-focus">
+                Request this plant →
+            </a>
+        </div>
+    </div>
+</div>
+
+{% else %}
+{# ── Plant grid ── #}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+    {% for plant in plants %}
+    <a href="{{ path('plant_detail', {slug: plant.slug}) }}"
+       class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow hover:-translate-y-0.5 transition-transform border border-base-200">
+        <div class="card-body p-4">
+
+            {# Name #}
+            <h2 class="card-title text-sm font-bold italic text-primary leading-tight">
+                {{ plant.canonicalName }}
+            </h2>
+
+            {# Common name #}
+            {% set en = (plant.commonNames ?? [])|filter(c => c.lang == 'en')|first %}
+            {% if en %}
+            <p class="text-xs text-base-content/60 -mt-1">{{ en.name }}</p>
+            {% endif %}
+
+            {# Tags #}
+            <div class="flex flex-wrap gap-1 mt-2">
+                {% if plant.family %}
+                <span class="badge badge-ghost badge-sm text-xs">{{ plant.family }}</span>
+                {% endif %}
+
+                {% set gradeColor = {
+                    'pending':  'badge-warning',
+                    'draft':    'badge-info',
+                    'community':'badge-success',
+                    'verified': 'badge-success'
+                } %}
+                <span class="badge {{ gradeColor[plant.qualityGrade] ?? 'badge-ghost' }} badge-sm text-xs">
+                    {{ plant.qualityGrade }}
+                </span>
+
+                {% if plant.aiPrefilled %}
+                <span class="badge badge-ghost badge-sm text-xs opacity-60">AI</span>
+                {% endif %}
+            </div>
+
+            {# Completeness bar #}
+            {% if plant.completenessScore %}
+            <div class="mt-3">
+                <div class="flex justify-between text-xs text-base-content/50 mb-1">
+                    <span>Completeness</span>
+                    <span>{{ plant.completenessScore }}%</span>
+                </div>
+                <progress class="progress progress-success h-1.5 w-full"
+                          value="{{ plant.completenessScore }}" max="100"></progress>
+            </div>
+            {% endif %}
+
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+{# ── Pagination ── #}
+{% if total_pages > 1 %}
+<div class="flex justify-center">
+    <div class="join">
+        {% if page > 1 %}
+        <a href="{{ path('plant_index', {page: page - 1, q: q}) }}" class="join-item btn btn-sm">«</a>
+        {% endif %}
+
+        {% for p in max(1, page - 2)..min(total_pages, page + 2) %}
+        <a href="{{ path('plant_index', {page: p, q: q}) }}"
+           class="join-item btn btn-sm {{ p == page ? 'bg-primary text-white border-0' : '' }}">
+            {{ p }}
+        </a>
+        {% endfor %}
+
+        {% if page < total_pages %}
+        <a href="{{ path('plant_index', {page: page + 1, q: q}) }}" class="join-item btn btn-sm">»</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% endif %}
+
+{# ── CTA wenn DB leer ── #}
+{% if total == 0 and not q %}
+<div class="hero py-16">
+    <div class="hero-content text-center">
+        <div>
+            <p class="text-5xl mb-4">🌱</p>
+            <h2 class="text-xl font-bold mb-2">No plants yet</h2>
+            <p class="text-base-content/60 mb-6">Be the first to request a plant.</p>
+            <a href="{{ path('plant_request') }}" class="btn bg-primary text-white border-0 hover:bg-primary-focus">
+                Request a plant →
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
