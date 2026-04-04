@@ -1,0 +1,225 @@
+name: Build and Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'README.md'
+      - 'CLAUDE.md'
+      - 'Documentation/**'
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # ==========================================
+      # 1. CHECKOUT & SETUP
+      # ==========================================
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🐘 Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, pdo_sqlite, zip
+          coverage: none
+          tools: composer:v2
+
+      # ==========================================
+      # 2. CACHE COMPOSER DEPENDENCIES
+      # ==========================================
+      - name: 💾 Cache Composer Dependencies
+        uses: actions/cache@v3
+        with:
+          path: Backend/vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('Backend/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      # ==========================================
+      # 3. SETUP BUILD ENVIRONMENT
+      # ==========================================
+      - name: 📝 Setup Build Environment
+        working-directory: Backend
+        run: |
+          cat > .env << 'EOF'
+          APP_ENV=prod
+          APP_SECRET=temp-build-secret-will-be-overwritten-on-server
+          DATABASE_URL=sqlite:///%kernel.project_dir%/var/flowerchino.db
+          ANTHROPIC_API_KEY=dummy-key-for-build
+          LOCK_DSN=flock
+          CORS_ALLOW_ORIGIN=^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$
+          DEFAULT_URI=https://flowerchino.com
+          EOF
+          echo "✅ Build environment configured"
+
+      # ==========================================
+      # 4. INSTALL DEPENDENCIES
+      # ==========================================
+      - name: 🎼 Install Composer Dependencies
+        working-directory: Backend
+        run: |
+          echo "::group::Composer Install"
+          composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-progress
+          echo "✅ Composer dependencies installed"
+          echo "::endgroup::"
+
+      # ==========================================
+      # 5. BUILD SYMFONY CACHE
+      # ==========================================
+      - name: 🔥 Clear and Warmup Symfony Cache
+        working-directory: Backend
+        run: |
+          echo "::group::Cache Operations"
+          php bin/console cache:clear --env=prod --no-debug --no-warmup
+          php bin/console cache:warmup --env=prod --no-debug
+          echo "✅ Symfony cache warmed"
+          echo "::endgroup::"
+
+      - name: 📂 Install Symfony Assets
+        working-directory: Backend
+        run: |
+          php bin/console assets:install public --env=prod --no-debug
+          echo "✅ Assets installed"
+
+      # ==========================================
+      # 6. CLEANUP DEV FILES
+      # ==========================================
+      - name: 🧹 Remove Development & Build Files
+        working-directory: Backend
+        run: |
+          echo "::group::Cleanup"
+
+          rm -rf tests/
+          rm -f .gitignore .gitattributes
+          rm -f phpunit.xml.dist
+
+          # Remove ALL .env files — server has its own .env
+          rm -f .env .env.local .env.test .env.*.local .env.local.php
+
+          # Remove SQLite dev DB
+          rm -f var/flowerchino.db var/*.db
+
+          # Clean cache/logs but keep directory structure
+          rm -rf var/cache/*
+          rm -rf var/log/*
+          mkdir -p var/cache var/log
+
+          echo "✅ Cleanup done"
+          echo "::endgroup::"
+
+      # ==========================================
+      # 7. DEPLOYMENT INFO
+      # ==========================================
+      - name: 📝 Generate Deployment Info
+        working-directory: Backend
+        run: |
+          cat > DEPLOYMENT_INFO.txt << EOF
+          Deployment Information
+          ======================
+          Commit: ${{ github.sha }}
+          Short:  ${GITHUB_SHA:0:7}
+          Branch: ${{ github.ref_name }}
+          Actor:  ${{ github.actor }}
+          Run:    ${{ github.run_number }}
+          Time:   $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          EOF
+          cat DEPLOYMENT_INFO.txt
+
+      # ==========================================
+      # 8. DEPLOY TO RELEASE BRANCH
+      # ==========================================
+      - name: 🚀 Deploy to Release Branch
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: Backend
+          publish_branch: release
+          force_orphan: true
+          commit_message: "deploy: build from main@${{ github.sha }}"
+
+      # ==========================================
+      # 9. WAIT FOR GITHUB
+      # ==========================================
+      - name: ⏳ Wait for Release Branch
+        run: |
+          echo "Waiting 10 seconds for GitHub to process..."
+          sleep 10
+
+      # ==========================================
+      # 10. TRIGGER NETCUP WEBHOOK
+      # ==========================================
+      - name: 🔔 Trigger Netcup Deployment Webhook
+        id: webhook
+        run: |
+          echo "::group::Webhook"
+
+          MAX_RETRIES=3
+          RETRY_DELAY=10
+          SUCCESS=false
+
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "🔄 Attempt $i/$MAX_RETRIES"
+
+            HTTP_CODE=$(curl -s -o /tmp/webhook_response.txt -w "%{http_code}" \
+              -X POST \
+              -H "Content-Type: application/json" \
+              --max-time 30 \
+              "${{ secrets.NETCUP_WEBHOOK_URL }}")
+
+            echo "HTTP: $HTTP_CODE"
+
+            if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+              echo "✅ Webhook triggered!"
+              cat /tmp/webhook_response.txt || true
+              SUCCESS=true
+              break
+            else
+              echo "⚠️ Failed with HTTP $HTTP_CODE"
+              cat /tmp/webhook_response.txt || true
+              if [ $i -lt $MAX_RETRIES ]; then
+                echo "Retrying in ${RETRY_DELAY}s..."
+                sleep $RETRY_DELAY
+              fi
+            fi
+          done
+
+          if [ "$SUCCESS" = false ]; then
+            echo "::error::❌ Webhook failed after $MAX_RETRIES attempts"
+            exit 1
+          fi
+
+          echo "::endgroup::"
+
+      # ==========================================
+      # 11. SUMMARY
+      # ==========================================
+      - name: 📊 Deployment Summary
+        if: always()
+        run: |
+          echo "## 🌱 Flowerchino Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${GITHUB_SHA:0:7}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Actor | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Webhook | ${{ steps.webhook.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ **Live in ~30–60 seconds.**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Deployment failed — check logs.**" >> $GITHUB_STEP_SUMMARY
+          fi
